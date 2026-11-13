@@ -7,9 +7,9 @@ interface InfoRowProps {
 
 export default function InfoRow({ label, value }: InfoRowProps) {
   return (
-    <div className="flex flex-row justify-between items-center tracking-wide font-semibold">
-      <h3 className="text-gray-500">{label}</h3>
-      <div className="text-gray-800 text-right">{value ?? "N/A"}</div>
+    <div className="flex items-center justify-between gap-4 border-b border-line/70 py-2.5 text-sm last:border-b-0">
+      <span className="text-muted">{label}</span>
+      <div className="text-right font-medium text-ink">{value ?? "—"}</div>
     </div>
   );
 }

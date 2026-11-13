@@ -1,3 +1,7 @@
+"use client";
+
+import { motion } from "motion/react";
+
 interface AuthFormCardProps {
   header: React.ReactNode;
   children: React.ReactNode;
@@ -6,10 +10,15 @@ interface AuthFormCardProps {
 
 export function AuthFormCard({ header, children, footer }: AuthFormCardProps) {
   return (
-    <div className="flex flex-col items-center justify-center h-screen gap-4 sm:gap-4 p-8">
-      {header}
+    <motion.div
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      className="relative w-full max-w-sm"
+    >
+      <div className="mb-7">{header}</div>
       {children}
-      {footer}
-    </div>
+      {footer && <div className="mt-6 text-center text-sm">{footer}</div>}
+    </motion.div>
   );
 }

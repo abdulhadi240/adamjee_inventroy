@@ -1,37 +1,83 @@
+"use client";
+
 import Link from "next/link";
-import { formatCurrency, getStockStatus } from "@/lib/utils/formatters";
+import { motion } from "motion/react";
+import { formatCurrency } from "@/lib/utils/formatters";
+import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 import { Product } from "@/lib/types";
-interface ProductRowProps {
-  product: Product;
+import ProductThumb from "@/components/features/inventory/ProductThumb";
+
+export function StockBadge({ stock }: { stock: number }) {
+  if (stock === 0)
+    return (
+      <span className="badge bg-rose-50 text-rose-600 ring-1 ring-rose-100">
+        <span className="size-1.5 rounded-full bg-rose-500" />
+        Out of stock
+      </span>
+    );
+  if (stock < LOW_STOCK_THRESHOLD)
+    return (
+      <span className="badge bg-amber-50 text-amber-700 ring-1 ring-amber-100">
+        <span className="size-1.5 rounded-full bg-amber-500" />
+        Low stock
+      </span>
+    );
+  return (
+    <span className="badge bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100">
+      <span className="size-1.5 rounded-full bg-emerald-500" />
+      In stock
+    </span>
+  );
 }
 
-export default function ProductRow({ product }: ProductRowProps) {
-  const status = getStockStatus(product.amount_stock);
+interface ProductRowProps {
+  product: Product;
+  index?: number;
+}
 
+export default function ProductRow({ product, index = 0 }: ProductRowProps) {
   return (
-    <tr className="hover:bg-gray-100">
-      <td className="py-2 px-2 md:px-4 hidden md:table-cell">
-        {product.supplier?.supplier_name}
-      </td>
-      <td className="py-2 px-2 md:px-4">
+    <motion.tr
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: Math.min(index, 10) * 0.02, duration: 0.25 }}
+      className="group"
+    >
+      <td>
         <Link
           href={`/product/${product.id}`}
-          className="text-blue-600 hover:underline"
+          className="flex items-center gap-3"
         >
-          {product.product_name}
+          <ProductThumb
+            src={product.product_image}
+            alt={product.product_name}
+          />
+          <div className="min-w-0">
+            <p className="truncate font-medium text-ink transition-colors group-hover:text-navy-600">
+              {product.product_name}
+            </p>
+            <p className="truncate text-xs capitalize text-muted">
+              {product.product_category}
+            </p>
+          </div>
         </Link>
       </td>
-      <td className="py-2 px-2 md:px-4 hidden lg:table-cell">
-        {product.product_type}
+      <td className="hidden lg:table-cell text-muted">{product.product_type}</td>
+      <td className="hidden md:table-cell text-muted">
+        {product.supplier?.supplier_name ?? "—"}
       </td>
-      <td className="py-2 px-2 md:px-4 hidden lg:table-cell">
+      <td className="hidden lg:table-cell text-right tabular-nums text-muted">
         {formatCurrency(product.buy_price)}
       </td>
-      <td className="py-2 px-2 md:px-4 hidden md:table-cell">
+      <td className="hidden md:table-cell text-right font-medium tabular-nums">
         {formatCurrency(product.sell_price)}
       </td>
-      <td className="py-2 px-2 md:px-4">{product.amount_stock}</td>
-      <td className={`py-2 px-2 md:px-4 ${status.color}`}>{status.label}</td>
-    </tr>
+      <td className="text-right font-semibold tabular-nums">
+        {product.amount_stock}
+      </td>
+      <td>
+        <StockBadge stock={product.amount_stock} />
+      </td>
+    </motion.tr>
   );
 }

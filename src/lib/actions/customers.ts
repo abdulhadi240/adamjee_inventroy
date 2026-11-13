@@ -3,7 +3,7 @@
 import { createClientServer } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { sanitizePhoneNumber } from "@/lib/utils/formatters";
-import { FormState } from "@/lib/types";
+import { CustomerOption, FormState } from "@/lib/types";
 
 export async function getAllCustomers() {
   const supabase = await createClientServer();
@@ -22,9 +22,9 @@ export async function getAllCustomers() {
 }
 
 export async function insertCustomer(
-  previousState: FormState,
+  previousState: FormState<CustomerOption>,
   formData: FormData
-): Promise<FormState> {
+): Promise<FormState<CustomerOption>> {
   const supabase = await createClientServer();
 
   const {
@@ -53,12 +53,16 @@ export async function insertCustomer(
     return { success: false, message: "Invalid contact number format." };
   }
 
-  const { error } = await supabase.from("customers").insert({
-    name: customer_name,
-    address: address,
-    contact_number: contact_number,
-    user_id: user.id,
-  });
+  const { data, error } = await supabase
+    .from("customers")
+    .insert({
+      name: customer_name,
+      address: address,
+      contact_number: contact_number,
+      user_id: user.id,
+    })
+    .select("id, name, contact_number")
+    .single();
 
   if (error) {
     console.error("Failed to insert customer:", error.message);
@@ -69,7 +73,11 @@ export async function insertCustomer(
   }
 
   revalidatePath("/customers");
-  return { success: true, message: "Customer added successfully!" };
+  return {
+    success: true,
+    message: "Customer added successfully!",
+    data: { ...data, id: String(data.id) },
+  };
 }
 
 export async function updateCustomer(

@@ -1,24 +1,59 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { motion } from "motion/react";
+import { Check, Loader2, Package, Pencil, Trash2, X } from "lucide-react";
 import { updateOrder, deleteOrder } from "@/lib/actions/orders";
 import {
   formatCurrency,
+  formatDate,
   formatDateForInput,
-  getOrderStatus,
 } from "@/lib/utils/formatters";
-import { Button } from "@/components/ui/Button";
-import { EditIcon, CloseIcon, DeleteIcon, SaveIcon } from "@/components/icons";
+import { ORDER_STATUSES } from "@/lib/constants";
 import { Order } from "@/lib/types";
+import DatePicker from "@/components/ui/DatePicker";
 
 interface OrderRowProps {
   order: Order;
+  index?: number;
   onOrderChange: () => void;
   onViewItems: () => void;
 }
 
+const STATUS_STYLES: Record<string, string> = {
+  Pending: "bg-amber-50 text-amber-700 ring-1 ring-amber-100",
+  Shipped: "bg-sky-50 text-navy-700 ring-1 ring-sky-100",
+  Completed: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100",
+  Cancelled: "bg-rose-50 text-rose-600 ring-1 ring-rose-100",
+};
+
+export function OrderStatusBadge({ status }: { status: string }) {
+  return (
+    <span
+      className={`badge ${STATUS_STYLES[status] ?? "bg-canvas text-muted"}`}
+    >
+      <span
+        className={`size-1.5 rounded-full ${
+          status === "Completed"
+            ? "bg-emerald-500"
+            : status === "Pending"
+            ? "bg-amber-500"
+            : status === "Shipped"
+            ? "bg-navy-500"
+            : "bg-current"
+        }`}
+      />
+      {status}
+    </span>
+  );
+}
+
+const iconBtn =
+  "grid size-8 cursor-pointer place-items-center rounded-full border border-line bg-white text-muted transition-colors duration-150 hover:border-navy-200 hover:bg-navy-50 hover:text-navy-700 disabled:pointer-events-none disabled:opacity-40";
+
 export default function OrderRow({
   order,
+  index = 0,
   onOrderChange,
   onViewItems,
 }: OrderRowProps) {
@@ -27,6 +62,7 @@ export default function OrderRow({
 
   const [isSaving, startSaveTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
+  const busy = isSaving || isDeleting;
 
   const [editData, setEditData] = useState({
     status: order.status,
@@ -34,6 +70,15 @@ export default function OrderRow({
   });
 
   const handleSave = async () => {
+    if (
+      editData.status === "Completed" &&
+      !window.confirm(
+        "Mark as completed? All items in this order will be added to stock. This can't be undone."
+      )
+    ) {
+      return;
+    }
+
     const formData = new FormData();
     formData.append("order_id", String(order.id));
     formData.append("status", editData.status);
@@ -43,7 +88,6 @@ export default function OrderRow({
       const result = await updateOrder(null, formData);
       if (result.success) {
         setIsEditing(false);
-        alert("Order updated!");
         onOrderChange();
       } else {
         alert(result.message);
@@ -63,7 +107,6 @@ export default function OrderRow({
     startDeleteTransition(async () => {
       const result = await deleteOrder(order.id);
       if (result.success) {
-        alert(result.message);
         onOrderChange();
       } else {
         alert(result.message);
@@ -72,107 +115,125 @@ export default function OrderRow({
   };
 
   return (
-    <tr className="hover:bg-gray-100">
-      <td className="py-2 px-2 md:px-4 hidden md:table-cell font-medium">
+    <motion.tr
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: busy ? 0.6 : 1, y: 0 }}
+      transition={{ delay: index * 0.035, duration: 0.3 }}
+      className={isEditing ? "bg-navy-50/60" : ""}
+    >
+      <td className="hidden font-mono text-xs font-semibold text-navy-700 md:table-cell">
         {order.po_code}
       </td>
-      <td className="py-2 px-2 md:px-4">
-        {order.supplier?.supplier_name ?? "N/A"}
-      </td>
-      <td className="py-2 px-2 md:px-4 hidden md:table-cell">
+      <td className="font-medium">{order.supplier?.supplier_name ?? "—"}</td>
+      <td className="hidden tabular-nums md:table-cell">
         {formatCurrency(order.total_cost)}
       </td>
-      <td className="py-2 px-2 md:px-4">
+      <td>
         <button
           onClick={onViewItems}
-          className="text-xs sm:text-base text-blue-600 hover:underline cursor-pointer"
+          className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-navy-50 px-2.5 py-1 text-xs font-semibold text-navy-700 transition-colors hover:bg-navy-100"
         >
-          {order.items.length} Product(s)
+          <Package className="size-3.5" />
+          {order.items.length} {order.items.length === 1 ? "item" : "items"}
         </button>
       </td>
 
-      <td className="py-2 px-2 md:px-4 hidden md:table-cell">
+      <td className="hidden text-muted md:table-cell">
         {isEditing ? (
-          <input
-            type="date"
+          <DatePicker
+            variant="compact"
+            aria-label="Expected delivery"
             value={editData.date}
-            onChange={(e) => setEditData({ ...editData, date: e.target.value })}
-            className="border rounded-md p-1 w-fit"
-            disabled={isSaving || isDeleting}
+            onChange={(date) => setEditData({ ...editData, date })}
+            disabled={busy}
           />
         ) : order.expected_delivery_date ? (
-          new Date(order.expected_delivery_date).toLocaleDateString("id-ID")
+          formatDate(order.expected_delivery_date)
         ) : (
-          "N/A"
+          "—"
         )}
       </td>
 
-      <td className="py-2 px-2 md:px-4 font-semibold">
+      <td>
         {isEditing ? (
           <select
             value={editData.status}
             onChange={(e) =>
               setEditData({ ...editData, status: e.target.value })
             }
-            className="border rounded-md p-1 w-fit"
-            disabled={isSaving || isDeleting}
+            className="field w-fit cursor-pointer py-1.5"
+            disabled={busy}
           >
-            <option value="Pending">Pending</option>
-            <option value="Shipped">Shipped</option>
-            <option value="Completed">Completed</option>
+            {ORDER_STATUSES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
           </select>
         ) : (
-          <span className={getOrderStatus(order.status)}>{order.status}</span>
+          <OrderStatusBadge status={order.status} />
         )}
       </td>
 
-      <td className="py-2 px-4">
-        {isEditing ? (
-          <div className="flex gap-2">
-            <Button
-              variant="primary"
-              onClick={handleSave}
-              disabled={isSaving || isDeleting}
-              className="text-xs p-1"
-            >
-              {isSaving ? "..." : <SaveIcon className="w-4 h-4 text-white" />}
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => setIsEditing(false)}
-              disabled={isSaving || isDeleting}
-              className="text-xs p-1"
-            >
-              <CloseIcon className="w-4 h-4 text-red-500" />
-            </Button>
-          </div>
-        ) : (
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => setIsEditing(true)}
-              className="flex items-center gap-1 text-xs"
-              disabled={isCompleted}
-              title={isCompleted ? "Cannot edit complete order" : "Edit"}
-            >
-              <EditIcon className="w-4 h-4 text-gray-900" />
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={handleDelete}
-              className="flex items-center gap-1 text-xs text-red-500"
-              disabled={isCompleted || isDeleting}
-              title={isCompleted ? "Cannot delete complete order" : "Delete"}
-            >
-              {isDeleting ? (
-                "..."
-              ) : (
-                <DeleteIcon className="w-4 h-4 text-red-500" />
-              )}
-            </Button>
-          </div>
-        )}
+      <td>
+        <div className="flex justify-end gap-1.5">
+          {isEditing ? (
+            <>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={busy}
+                aria-label="Save"
+                className={`${iconBtn} border-navy-700 bg-navy-700 text-white hover:bg-navy-600 hover:text-white`}
+              >
+                {isSaving ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Check className="size-3.5" />
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                disabled={busy}
+                aria-label="Cancel"
+                className={iconBtn}
+              >
+                <X className="size-3.5" />
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                disabled={isCompleted || busy}
+                title={isCompleted ? "Completed orders can't be edited" : "Edit"}
+                aria-label="Edit order"
+                className={iconBtn}
+              >
+                <Pencil className="size-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isCompleted || busy}
+                title={
+                  isCompleted ? "Completed orders can't be deleted" : "Delete"
+                }
+                aria-label="Delete order"
+                className={`${iconBtn} hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600`}
+              >
+                {isDeleting ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="size-3.5" />
+                )}
+              </button>
+            </>
+          )}
+        </div>
       </td>
-    </tr>
+    </motion.tr>
   );
 }

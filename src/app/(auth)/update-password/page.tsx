@@ -9,7 +9,7 @@ export default function UpdatePasswordPage() {
     <AuthFormCard
       header={
         <AuthHeader
-          title="Update Password"
+          title="Choose a new password"
           subtitle="Please enter your new password below."
         />
       }

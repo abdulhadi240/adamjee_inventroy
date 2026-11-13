@@ -1,3 +1,8 @@
+"use client";
+
+import { motion } from "motion/react";
+import { Layers, Tags } from "lucide-react";
+import { AnimatedCard, CardHeader, EmptyState } from "@/components/ui/motion";
 import { formatCurrency } from "@/lib/utils/formatters";
 import { CategoryData } from "@/lib/types";
 
@@ -8,59 +13,77 @@ interface CategoryPerformanceTableProps {
 export default function CategoryPerformanceTable({
   data,
 }: CategoryPerformanceTableProps) {
+  const totalSales = data.reduce((sum, c) => sum + Number(c.sales), 0);
+
   return (
-    <div className="bg-white shadow-md p-6 rounded-xl">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-lg font-bold text-gray-800">Profit by Category</h2>
+    <AnimatedCard flush>
+      <div className="px-5 pt-5">
+        <CardHeader
+          title="Performance by category"
+          subtitle="Share of revenue and profit per product category"
+          icon={Layers}
+        />
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white text-left">
-          <thead className="text-sm sm:text-base">
-            <tr>
-              <th className="py-2 px-2 md:px-4 font-semibold text-gray-900">
-                Category
-              </th>
-              <th className="py-2 px-2 md:px-4 font-semibold text-gray-900">
-                Sales Volume
-              </th>
-              <th className="py-2 px-2 md:px-4 font-semibold text-gray-900">
-                Total Profit
-              </th>
-            </tr>
-          </thead>
-
-          {/* Body Style disamakan dengan ProductTable */}
-          <tbody className="text-sm sm:text-base border-t border-gray-300">
-            {data.map((cat) => (
-              <tr
-                key={cat.category}
-                className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-              >
-                <td className="py-2 px-2 md:px-4 font-medium text-gray-900">
-                  {cat.category}
-                </td>
-                <td className="py-2 px-2 md:px-4 text-gray-600">
-                  {formatCurrency(cat.sales)}
-                </td>
-                <td className="py-2 px-2 md:px-4 text-green-600 font-bold">
-                  {formatCurrency(cat.profit)}
-                </td>
-              </tr>
-            ))}
-            {data.length === 0 && (
+      {data.length === 0 ? (
+        <EmptyState
+          icon={Tags}
+          title="No category data"
+          description="Sales in this period will appear here."
+        />
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="data-table">
+            <thead>
               <tr>
-                <td
-                  colSpan={3}
-                  className="py-8 text-center text-gray-400 italic"
-                >
-                  No data available for this period.
-                </td>
+                <th>Category</th>
+                <th className="w-[38%]">Share of sales</th>
+                <th className="text-right">Revenue</th>
+                <th className="text-right">Profit</th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+            </thead>
+            <tbody>
+              {data.map((cat, i) => {
+                const share = totalSales > 0 ? (Number(cat.sales) / totalSales) * 100 : 0;
+                const profit = Number(cat.profit);
+                return (
+                  <motion.tr
+                    key={cat.category}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 + i * 0.05 }}
+                  >
+                    <td className="font-medium capitalize">{cat.category}</td>
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <div className="h-2 flex-1 overflow-hidden rounded-full bg-navy-50">
+                          <motion.div
+                            className="h-full rounded-full bg-navy-600"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${share}%` }}
+                            transition={{ delay: 0.25 + i * 0.06, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+                          />
+                        </div>
+                        <span className="w-11 text-right text-xs font-semibold tabular-nums text-muted">
+                          {share.toFixed(1)}%
+                        </span>
+                      </div>
+                    </td>
+                    <td className="text-right tabular-nums">{formatCurrency(cat.sales)}</td>
+                    <td
+                      className={`text-right font-semibold tabular-nums ${
+                        profit >= 0 ? "text-emerald-600" : "text-rose-600"
+                      }`}
+                    >
+                      {formatCurrency(profit)}
+                    </td>
+                  </motion.tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </AnimatedCard>
   );
 }

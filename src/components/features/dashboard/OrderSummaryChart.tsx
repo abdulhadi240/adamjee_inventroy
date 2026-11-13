@@ -1,79 +1,87 @@
 "use client";
 
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from "recharts";
+import { Truck } from "lucide-react";
+import { AnimatedCard, CardHeader } from "@/components/ui/motion";
 import { ChartData } from "@/lib/types";
+import { formatCurrency } from "@/lib/utils/formatters";
+import {
+  CHART_COLORS,
+  axisProps,
+  compactTick,
+  gridProps,
+  tooltipProps,
+} from "@/lib/chart-theme";
 
 export default function OrderSummaryChart({ data }: { data: ChartData[] }) {
   return (
-    <div className="bg-white shadow-md p-6 rounded-xl w-full lg:w-1/3">
-      <h2 className="text-lg mb-6">Order Summary</h2>
+    <AnimatedCard>
+      <CardHeader
+        title="Restock flow"
+        subtitle="Ordered vs delivered value"
+        icon={Truck}
+      />
 
-      <div className="h-[300px] w-full">
+      <div className="mb-2 flex items-center gap-4 text-[11px] text-muted">
+        <span className="flex items-center gap-1.5">
+          <span className="size-2 rounded-full bg-amber-500" /> Ordered
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="size-2 rounded-full bg-navy-700" /> Delivered
+        </span>
+      </div>
+
+      <div className="h-[260px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart
-            data={data}
-            margin={{
-              top: 5,
-              right: 30,
-              left: -25,
-              bottom: 5,
-            }}
-          >
-            <CartesianGrid
-              strokeDasharray="3 3"
-              vertical={false}
-              stroke="#E5E7EB"
-            />
-            <XAxis
-              dataKey="name"
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: "#6B7280", fontSize: 12 }}
-              dy={10}
-              interval={0}
-            />
-            <YAxis
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: "#6B7280", fontSize: 12 }}
-            />
+          <AreaChart data={data} margin={{ top: 5, right: 4, left: -18, bottom: 0 }}>
+            <defs>
+              <linearGradient id="area-ordered" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={CHART_COLORS.amber} stopOpacity={0.12} />
+                <stop offset="100%" stopColor={CHART_COLORS.amber} stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="area-delivered" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={CHART_COLORS.navy} stopOpacity={0.12} />
+                <stop offset="100%" stopColor={CHART_COLORS.navy} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid {...gridProps} />
+            <XAxis dataKey="name" {...axisProps} dy={8} minTickGap={8} />
+            <YAxis {...axisProps} tickFormatter={compactTick} />
             <Tooltip
-              contentStyle={{
-                borderRadius: "8px",
-                border: "none",
-                boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-              }}
+              {...tooltipProps}
+              cursor={{ stroke: CHART_COLORS.navyLight, strokeDasharray: "4 4" }}
+              formatter={(value: number) => formatCurrency(value)}
             />
-            <Legend iconType="circle" wrapperStyle={{ paddingTop: "20px" }} />
-            <Line
+            <Area
               type="monotone"
               dataKey="ordered"
               name="Ordered"
-              stroke="#F59E0B"
-              strokeWidth={3}
-              dot={{ r: 4, strokeWidth: 2 }}
-              activeDot={{ r: 6 }}
+              stroke={CHART_COLORS.amber}
+              strokeWidth={2.2}
+              fill="url(#area-ordered)"
+              animationDuration={1000}
             />
-            <Line
+            <Area
               type="monotone"
               dataKey="delivered"
               name="Delivered"
-              stroke="#0EA5E9"
-              strokeWidth={3}
-              dot={{ r: 4, strokeWidth: 2 }}
+              stroke={CHART_COLORS.navy}
+              strokeWidth={2.2}
+              fill="url(#area-delivered)"
+              animationDuration={1000}
+              animationBegin={200}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
-    </div>
+    </AnimatedCard>
   );
 }

@@ -2,7 +2,6 @@
 
 import { AuthFormCard } from "@/components/features/auth/AuthFormCard";
 import { AuthHeader } from "@/components/features/auth/AuthHeader";
-import { AuthFooter } from "@/components/features/auth/AuthFooter";
 import LoginForm from "@/components/features/auth/LoginForm";
 
 export default function LoginPage() {
@@ -10,16 +9,14 @@ export default function LoginPage() {
     <AuthFormCard
       header={
         <AuthHeader
-          title="Log in to your account"
-          subtitle="Welcome back! Please enter your details."
+          title="Sign in"
+          subtitle="Use your Adamjee Computers staff account."
         />
       }
       footer={
-        <AuthFooter
-          description="Don't have an account?"
-          linkText="Sign Up"
-          linkHref="/signup"
-        />
+        <p className="text-xs text-muted">
+          Don&apos;t have access? Ask your administrator for an account.
+        </p>
       }
     >
       <LoginForm />

@@ -10,15 +10,14 @@ export default function ForgotPasswordPage() {
     <AuthFormCard
       header={
         <AuthHeader
-          title="Forgot Password"
-          subtitle="Enter your registered email and we'll send you a password reset
-          link."
+          title="Reset your password"
+          subtitle="Enter your email and we'll send you a secure reset link."
         />
       }
       footer={
         <AuthFooter
           description="Remember your password?"
-          linkText="Log In"
+          linkText="Back to sign in"
           linkHref="/login"
         />
       }

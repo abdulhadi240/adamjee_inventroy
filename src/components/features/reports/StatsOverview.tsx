@@ -1,5 +1,7 @@
-import StatCard from "@/components/ui/StatCard";
-import { formatCurrency } from "@/lib/utils/formatters";
+"use client";
+
+import { Banknote, Coins, Percent, TrendingUp } from "lucide-react";
+import { Stagger, StatTile } from "@/components/ui/motion";
 import { FinancialSummary } from "@/lib/types";
 
 interface StatsOverviewProps {
@@ -7,32 +9,40 @@ interface StatsOverviewProps {
 }
 
 export default function StatsOverview({ summary }: StatsOverviewProps) {
+  const tx = summary.totalTransactions ?? 0;
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 bg-white shadow-md p-6 rounded-xl w-full">
-      <StatCard
-        title="Gross Revenue"
-        value={formatCurrency(summary.totalRevenue)}
-        description="Total sales in period"
-        titleColor="text-blue-600"
+    <Stagger className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <StatTile
+        label="Gross revenue"
+        value={Number(summary.totalRevenue)}
+        format="currency"
+        icon={Banknote}
+        hint={`${tx} ${tx === 1 ? "sale" : "sales"} in period`}
       />
-      <StatCard
-        title="COGS"
-        value={formatCurrency(summary.totalCost)}
-        description="Cost of Goods Sold"
-        titleColor="text-red-500"
+      <StatTile
+        label="Cost of goods sold"
+        value={Number(summary.totalCost)}
+        format="currency"
+        icon={Coins}
+        tone="red"
+        hint="Buy price of items sold"
       />
-      <StatCard
-        title="Net Profit"
-        value={formatCurrency(summary.grossProfit)}
-        description="Revenue - Cost"
-        titleColor="text-green-600"
+      <StatTile
+        label="Net profit"
+        value={Number(summary.grossProfit)}
+        format="currency"
+        icon={TrendingUp}
+        tone="green"
+        hint="Revenue minus cost"
       />
-      <StatCard
-        title="Profit Margin"
-        value={`${summary.marginPercent.toFixed(1)}%`}
-        description="Profitability ratio"
-        titleColor="text-purple-600"
+      <StatTile
+        label="Profit margin"
+        value={Number(summary.marginPercent)}
+        format="percent"
+        icon={Percent}
+        tone="navy"
+        hint="Profit as share of revenue"
       />
-    </div>
+    </Stagger>
   );
 }

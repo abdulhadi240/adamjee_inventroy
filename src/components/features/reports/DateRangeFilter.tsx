@@ -1,51 +1,80 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { ArrowRight, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import DatePicker from "@/components/ui/DatePicker";
+
+const PRESETS = [
+  { label: "7D", days: 7 },
+  { label: "30D", days: 30 },
+  { label: "90D", days: 90 },
+];
+
+const iso = (d: Date) => d.toISOString().split("T")[0];
 
 export default function DateRangeFilter() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
 
-  const defaultStart = new Date(
-    new Date().getFullYear(),
-    new Date().getMonth(),
-    2
-  )
-    .toISOString()
-    .split("T")[0];
-  const defaultEnd = new Date().toISOString().split("T")[0];
+  const defaultEnd = iso(new Date());
+  const defaultStart = iso(new Date(Date.now() - 30 * 86_400_000));
 
   const [start, setStart] = useState(searchParams.get("start") || defaultStart);
   const [end, setEnd] = useState(searchParams.get("end") || defaultEnd);
 
-  const handleApply = () => {
-    router.push(`?start=${start}&end=${end}`);
+  const apply = (s: string, e: string) =>
+    startTransition(() => router.push(`?start=${s}&end=${e}`, { scroll: false }));
+
+  const applyPreset = (days: number) => {
+    const e = iso(new Date());
+    const s = iso(new Date(Date.now() - days * 86_400_000));
+    setStart(s);
+    setEnd(e);
+    apply(s, e);
   };
 
   return (
-    <div className="flex items-end gap-4 bg-white p-4 rounded-md shadow-sm mb-4">
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-semibold text-gray-600">From</label>
-        <input
-          type="date"
+    <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center gap-0.5 rounded-full border border-line bg-white p-1 shadow-card">
+        {PRESETS.map((p) => (
+          <button
+            key={p.label}
+            type="button"
+            onClick={() => applyPreset(p.days)}
+            className="cursor-pointer rounded-full px-2.5 py-1 text-[11px] font-semibold text-muted transition-colors hover:bg-navy-50 hover:text-navy-700"
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-2 rounded-full border border-line bg-white px-3 shadow-card transition-colors ">
+        <CalendarDays className="size-4 text-muted" />
+        <DatePicker
+          variant="bare"
+          aria-label="From date"
           value={start}
-          onChange={(e) => setStart(e.target.value)}
-          className="border rounded-md p-2 text-sm"
+          max={end}
+          onChange={setStart}
         />
-      </div>
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-semibold text-gray-600">To</label>
-        <input
-          type="date"
+        <ArrowRight className="size-3.5 text-muted" />
+        <DatePicker
+          variant="bare"
+          aria-label="To date"
           value={end}
-          onChange={(e) => setEnd(e.target.value)}
-          className="border rounded-md p-2 text-sm"
+          min={start}
+          onChange={setEnd}
         />
       </div>
-      <Button onClick={handleApply} className="h-10">
-        Apply Filter
+
+      <Button size="sm" className="h-10 px-4" onClick={() => apply(start, end)} disabled={isPending}>
+        {isPending ? (
+          <span className="size-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+        ) : null}
+        Apply
       </Button>
     </div>
   );

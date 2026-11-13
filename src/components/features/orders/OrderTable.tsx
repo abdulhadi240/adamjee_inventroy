@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { ClipboardList } from "lucide-react";
 import { getPaginatedOrders } from "@/lib/actions/orders";
 import Pagination, { PAGE_SIZE } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/hooks/use-pagination";
 import OrderRow from "@/components/features/orders/OrderRow";
 import OrderItemsModal from "@/components/features/orders/OrderItemsModal";
+import { EmptyState } from "@/components/ui/motion";
 import { Order } from "@/lib/types";
 
 interface OrderTableProps {
@@ -21,6 +23,7 @@ export default function OrderTable({
   onOrderChange,
 }: OrderTableProps) {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
   const { currentPage, handlePageChange } = usePagination();
   const [viewingOrderItems, setViewingOrderItems] = useState<Order | null>(
@@ -43,6 +46,8 @@ export default function OrderTable({
         setTotalPages(Math.ceil(res.total / PAGE_SIZE));
       } catch (err: unknown) {
         console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
@@ -54,52 +59,53 @@ export default function OrderTable({
         order={viewingOrderItems}
         onClose={() => setViewingOrderItems(null)}
       />
-      <div className="pt-2 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white text-left text-sm sm:text-base">
-            <thead>
-              <tr>
-                <th className="py-2 px-2 md:px-4 hidden md:table-cell">PO ID</th>
-                <th className="py-2 px-2 md:px-4">Supplier</th>
-                <th className="py-2 px-2 md:px-4 hidden md:table-cell">
-                  Total Cost
-                </th>
-                <th className="py-2 px-2 md:px-4">Items</th>
-                <th className="py-2 px-2 md:px-4 hidden md:table-cell">
-                  Expected
-                </th>
-                <th className="py-2 px-2 md:px-4">Status</th>
-                <th className="py-2 px-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="border-t border-gray-300">
-              {orders.map((order) => (
-                <OrderRow
-                  key={order.id}
-                  order={order}
-                  onOrderChange={onOrderChange}
-                  onViewItems={() => setViewingOrderItems(order)}
-                />
+      <div className="overflow-x-auto px-2">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th className="hidden md:table-cell">PO code</th>
+              <th>Supplier</th>
+              <th className="hidden md:table-cell">Total cost</th>
+              <th>Items</th>
+              <th className="hidden md:table-cell">Expected</th>
+              <th>Status</th>
+              <th className="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading &&
+              orders.length === 0 &&
+              [0, 1, 2, 3].map((i) => (
+                <tr key={`sk-${i}`}>
+                  <td colSpan={7}>
+                    <div className="skeleton h-6" />
+                  </td>
+                </tr>
               ))}
-              {orders.length === 0 && (
-              <tr>
-                <td
-                  colSpan={4}
-                  className="py-8 text-center text-gray-500 italic"
-                >
-                  No orders found.
-                </td>
-              </tr>
-            )}
-            </tbody>
-          </table>
-        </div>
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-        />
+            {orders.map((order, index) => (
+              <OrderRow
+                key={order.id}
+                index={index}
+                order={order}
+                onOrderChange={onOrderChange}
+                onViewItems={() => setViewingOrderItems(order)}
+              />
+            ))}
+          </tbody>
+        </table>
+        {!loading && orders.length === 0 && (
+          <EmptyState
+            icon={ClipboardList}
+            title="No purchase orders here"
+            description="Create a purchase order to restock products from a supplier."
+          />
+        )}
       </div>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
     </>
   );
 }

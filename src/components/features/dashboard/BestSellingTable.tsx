@@ -1,11 +1,82 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { motion } from "motion/react";
+import { ArrowRight, Trophy } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
-import Link from "next/link";
+import { AnimatedCard, CardHeader, EmptyState } from "@/components/ui/motion";
 import { formatCurrency } from "@/lib/utils/formatters";
 import { TopProduct } from "@/lib/types";
+
+function SalesBar({ value, max }: { value: number; max: number }) {
+  const pct = max > 0 ? Math.max((value / max) * 100, 4) : 0;
+  return (
+    <div className="flex items-center gap-2.5">
+      <div className="h-1.5 w-20 overflow-hidden rounded-full bg-navy-50">
+        <motion.div
+          className="h-full rounded-full bg-navy-600"
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+        />
+      </div>
+      <span className="tabular-nums font-medium">{value}</span>
+    </div>
+  );
+}
+
+function ProductTable({ products }: { products: TopProduct[] }) {
+  const max = Math.max(...products.map((p) => p.soldQuantity), 0);
+  return (
+    <table className="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Product</th>
+          <th>Sold</th>
+          <th>In stock</th>
+          <th className="text-right">Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        {products.map((product, i) => (
+          <motion.tr
+            key={product.id}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 + i * 0.05 }}
+          >
+            <td className="w-10">
+              <span
+                className={`grid size-6 place-items-center rounded-full text-[11px] font-bold ${
+                  i === 0
+                    ? "bg-navy-700 text-white"
+                    : "bg-canvas text-muted"
+                }`}
+              >
+                {i + 1}
+              </span>
+            </td>
+            <td>
+              <Link href={`/product/${product.id}`} className="link">
+                {product.name}
+              </Link>
+            </td>
+            <td>
+              <SalesBar value={product.soldQuantity} max={max} />
+            </td>
+            <td className="tabular-nums text-muted">{product.remainingStock}</td>
+            <td className="text-right font-semibold tabular-nums">
+              {formatCurrency(product.price)}
+            </td>
+          </motion.tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
 
 export default function BestSellingTable({
   products,
@@ -13,75 +84,48 @@ export default function BestSellingTable({
   products: TopProduct[];
 }) {
   const [showModal, setShowModal] = useState(false);
-
   const widgetProducts = products.slice(0, 5);
 
   return (
     <>
-      <div className="bg-white shadow-md p-6 rounded-xl w-full md:w-2/3">
-        <div className="flex flex-row justify-between items-center mb-4">
-          <h1 className="text-lg">Best Selling Product</h1>
-          <button
-            onClick={() => setShowModal(true)}
-            className="text-blue-600 text-sm hover:underline cursor-pointer"
-          >
-            See All
-          </button>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white text-left">
-            <thead className="text-sm sm:text-base">
-              <tr>
-                <th className="py-2 px-4 font-semibold text-gray-900">
-                  Product
-                </th>
-                <th className="py-2 px-4 font-semibold text-gray-900">Sold</th>
-                <th className="py-2 px-4 font-semibold text-gray-900">Stock</th>
-                <th className="py-2 px-4 font-semibold text-gray-900">Price</th>
-              </tr>
-            </thead>
-            <tbody className="text-sm sm:text-base border-t border-gray-300">
-              {widgetProducts.map((product) => (
-                <tr
-                  key={product.id}
-                  className="hover:bg-gray-100 transition-colors"
+      <AnimatedCard flush className="overflow-hidden lg:col-span-2">
+        <div className="p-5 pb-0">
+          <CardHeader
+            title="Best sellers"
+            subtitle="Top products by units sold"
+            icon={Trophy}
+            action={
+              products.length > 0 && (
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="group inline-flex cursor-pointer items-center gap-1 text-xs font-semibold text-navy-600 hover:text-navy-800"
                 >
-                  <td className="py-2 px-4">
-                    <Link
-                      href={`/product/${product.id}`}
-                      className="text-blue-600 hover:underline"
-                    >
-                      {product.name}
-                    </Link>
-                  </td>
-                  <td className="py-2 px-4 ">{product.soldQuantity}</td>
-                  <td className="py-2 px-4 ">{product.remainingStock}</td>
-                  <td className="py-2 px-4 font-medium">
-                    {formatCurrency(product.price)}
-                  </td>
-                </tr>
-              ))}
-
-              {widgetProducts.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={4}
-                    className="py-6 text-center text-gray-500 italic"
-                  >
-                    No sales data available yet.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                  See all
+                  <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+                </button>
+              )
+            }
+          />
         </div>
-      </div>
+
+        {widgetProducts.length === 0 ? (
+          <EmptyState
+            icon={Trophy}
+            title="No sales yet"
+            description="Your top-selling products will appear here once you record sales."
+          />
+        ) : (
+          <div className="overflow-x-auto">
+            <ProductTable products={widgetProducts} />
+          </div>
+        )}
+      </AnimatedCard>
 
       <Modal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        title="All Best Selling Products"
+        title="All best sellers"
+        size="lg"
         footer={
           <Button
             type="button"
@@ -92,45 +136,8 @@ export default function BestSellingTable({
           </Button>
         }
       >
-        <div className="overflow-x-auto max-h-[60vh]">
-          <table className="min-w-full bg-white text-left">
-            <thead className="text-sm sm:text-base sticky top-0 bg-white shadow-sm">
-              <tr>
-                <th className="py-2 px-4 font-semibold text-gray-900">
-                  Product
-                </th>
-                <th className="py-2 px-4 font-semibold text-gray-900">Sold</th>
-                <th className="py-2 px-4 font-semibold text-gray-900">Stock</th>
-                <th className="py-2 px-4 font-semibold text-gray-900">Price</th>
-              </tr>
-            </thead>
-            <tbody className="text-sm sm:text-base border-t border-gray-300">
-              {products.map((product) => (
-                <tr
-                  key={product.id}
-                  className="hover:bg-gray-100 transition-colors"
-                >
-                  <td className="py-2 px-4 text-gray-800">
-                    <Link
-                      href={`/product/${product.id}`}
-                      className="text-blue-600 hover:underline"
-                    >
-                      {product.name}
-                    </Link>
-                  </td>
-                  <td className="py-2 px-4 text-gray-600">
-                    {product.soldQuantity}
-                  </td>
-                  <td className="py-2 px-4 text-gray-600">
-                    {product.remainingStock}
-                  </td>
-                  <td className="py-2 px-4 font-medium text-gray-900">
-                    {formatCurrency(product.price)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="-mx-6 max-h-[60vh] overflow-auto">
+          <ProductTable products={products} />
         </div>
       </Modal>
     </>

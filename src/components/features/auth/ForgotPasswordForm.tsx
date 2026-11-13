@@ -1,9 +1,11 @@
 "use client";
 
 import { useActionState } from "react";
+import { Mail, Send } from "lucide-react";
 import { resetPasswordEmail } from "@/lib/actions/auth";
 import InputField from "@/components/ui/InputField";
 import { Button } from "@/components/ui/Button";
+import { FormAlert, PendingLabel } from "./FormAlert";
 
 const initialState = {
   error: "",
@@ -17,20 +19,31 @@ export default function ForgotPasswordForm() {
   );
 
   return (
-    <form action={formAction} className="flex flex-col gap-4 w-full sm:w-100">
+    <form action={formAction} className="flex flex-col gap-4">
       <InputField
         id="email"
         name="email"
         type="email"
         label="Email"
-        placeholder="Enter your email"
+        placeholder="you@adamjee.pk"
+        icon={<Mail />}
         required
       />
 
-      {state?.error && <p className="text-red-500">{state?.error}</p>}
-      {state?.success && <p className="text-green-600">{state?.success}</p>}
-      <Button type="submit" disabled={isPending}>
-        {isPending ? "Sending..." : "Send Reset Link"}
+      <FormAlert tone="error" message={state?.error} />
+      <FormAlert tone="success" message={state?.success} />
+
+      <Button type="submit" disabled={isPending} className="mt-1 w-full">
+        <PendingLabel
+          pending={isPending}
+          busy="Sending…"
+          idle={
+            <>
+              <Send className="size-4" />
+              Send reset link
+            </>
+          }
+        />
       </Button>
     </form>
   );

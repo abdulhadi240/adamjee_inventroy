@@ -1,6 +1,7 @@
-import StatCard from "@/components/ui/StatCard";
-import StatCardDouble from "@/components/ui/StatCardDouble";
-import { formatCurrencyShort } from "@/lib/utils/formatters";
+"use client";
+
+import { AlertTriangle, Boxes, Layers, PackageX, Wallet } from "lucide-react";
+import { Stagger, StatTile } from "@/components/ui/motion";
 
 interface OverallInventoryProps {
   totalCategories: number;
@@ -18,32 +19,45 @@ export default function OverallInventory({
   noStockCount,
 }: OverallInventoryProps) {
   return (
-    <div className="bg-white shadow-md p-4 rounded-md">
-      <h1 className="sm:text-lg tracking-wide pb-2">Overall Inventory</h1>
-      <div className="flex flex-row justify-between gap-6">
-        <StatCard
-          title="Categories"
-          titleColor="text-blue-600"
-          value={totalCategories}
-          description="Total Categories"
-        />
-        <StatCardDouble
-          title="Products"
-          titleColor="text-yellow-700"
-          valueA={totalProducts}
-          descriptionA="Total Products"
-          valueB={formatCurrencyShort(totalInventoryValue)}
-          descriptionB="Total Value"
-        />
-        <StatCardDouble
-          title="Stocks Warning"
-          titleColor="text-red-400"
-          valueA={lowStockCount}
-          descriptionA="Low Stock"
-          valueB={noStockCount}
-          descriptionB="Not in Stock"
+    <Stagger className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div className="col-span-2 lg:col-span-1">
+        <StatTile
+          label="Stock value"
+          value={totalInventoryValue}
+          format="currency"
+          icon={Wallet}
+          tone="navy"
+          hint="At cost price"
         />
       </div>
-    </div>
+      <StatTile
+        label="Products"
+        value={totalProducts}
+        icon={Boxes}
+        tone="navy"
+        hint="Items in catalog"
+      />
+      <StatTile
+        label="Categories"
+        value={totalCategories}
+        icon={Layers}
+        tone="glow"
+        hint="Distinct categories"
+      />
+      <StatTile
+        label="Low stock"
+        value={lowStockCount}
+        icon={AlertTriangle}
+        tone="amber"
+        hint="Below threshold"
+      />
+      <StatTile
+        label="Out of stock"
+        value={noStockCount}
+        icon={PackageX}
+        tone="red"
+        hint="Need restock"
+      />
+    </Stagger>
   );
 }

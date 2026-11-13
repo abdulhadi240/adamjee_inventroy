@@ -13,18 +13,24 @@ export default function StatCardDouble({
   descriptionA,
   valueB,
   descriptionB,
-  titleColor = "text-gray-700",
+  titleColor = "text-navy-600",
 }: StatCardDoubleProps) {
   return (
-    <div className="text-xs sm:text-base flex flex-col gap-1">
-      <h3 className={`font-semibold text-center ${titleColor}`}>{title}</h3>
-      <div className="flex flex-row justify-between font-semibold">
-        <p>{valueA}</p>
-        <p>{valueB}</p>
-      </div>
-      <div className="flex flex-row justify-between gap-8 font-medium opacity-65">
-        <p>{descriptionA}</p>
-        <p>{descriptionB}</p>
+    <div className="flex flex-col gap-1">
+      <p className={`text-xs font-semibold ${titleColor}`}>{title}</p>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <p className="text-lg font-semibold tracking-tight text-ink tabular-nums">
+            {valueA}
+          </p>
+          <p className="text-[11px] text-muted">{descriptionA}</p>
+        </div>
+        <div>
+          <p className="text-lg font-semibold tracking-tight text-ink tabular-nums">
+            {valueB}
+          </p>
+          <p className="text-[11px] text-muted">{descriptionB}</p>
+        </div>
       </div>
     </div>
   );

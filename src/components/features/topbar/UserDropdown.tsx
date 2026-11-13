@@ -3,9 +3,33 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ProfileIcon } from "@/components/icons";
+import { AnimatePresence, motion } from "motion/react";
+import { ChevronDown, LogOut, Settings } from "lucide-react";
 import { User } from "@/lib/types";
 import { logout } from "@/lib/actions/auth";
+
+function Avatar({ user, size }: { user: User; size: number }) {
+  return (
+    <span
+      className="relative grid shrink-0 place-items-center overflow-hidden rounded-full bg-navy-700 text-white ring-2 ring-white"
+      style={{ width: size, height: size }}
+    >
+      {user.profile_picture ? (
+        <Image
+          src={user.profile_picture}
+          alt={user.name}
+          fill
+          sizes={`${size}px`}
+          className="object-cover"
+        />
+      ) : (
+        <span className="text-xs font-semibold">
+          {user.name?.charAt(0).toUpperCase() || "A"}
+        </span>
+      )}
+    </span>
+  );
+}
 
 export default function UserDropdown({ user }: { user: User }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,72 +49,62 @@ export default function UserDropdown({ user }: { user: User }) {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-10 h-10 rounded-full overflow-hidden cursor-pointer border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all flex items-center justify-center bg-gray-100"
+        className={`flex cursor-pointer items-center gap-2 rounded-full border bg-white py-0.5 pl-0.5 pr-0.5 transition-all md:pr-3 ${
+          isOpen ? "border-navy-200 shadow-card" : "border-line hover:border-navy-200"
+        }`}
       >
-        {user.profile_picture ? (
-          <Image
-            src={user.profile_picture}
-            alt={user.name}
-            width={40}
-            height={40}
-            className="object-cover w-full h-full"
-          />
-        ) : (
-          <span className="font-bold text-gray-500 text-sm">
-            {user.name?.charAt(0).toUpperCase() || <ProfileIcon />}
-          </span>
-        )}
+        <Avatar user={user} size={32} />
+        <span className="hidden max-w-28 truncate text-[13px] font-medium text-ink md:block">
+          {user.name}
+        </span>
+        <ChevronDown
+          className={`hidden size-3.5 text-muted transition-transform duration-200 md:block ${
+            isOpen ? "rotate-180" : ""
+          }`}
+        />
       </button>
 
-      {isOpen && (
-        <div className="absolute right-0 top-full mt-3 w-72 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-right z-50">
-          <div className="p-4 border-b border-gray-100 bg-gray-50/50">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full overflow-hidden border border-gray-200 bg-white flex-shrink-0 relative">
-                {user.profile_picture ? (
-                  <Image
-                    src={user.profile_picture}
-                    alt={user.name}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-500 font-bold text-xl">
-                    {user.name?.charAt(0).toUpperCase()}
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-col min-w-0">
-                <p className="text-sm font-bold text-gray-900 truncate">
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -6, scale: 0.97 }}
+            transition={{ duration: 0.18 }}
+            className="absolute right-0 top-full z-50 mt-2.5 w-64 origin-top-right overflow-hidden rounded-2xl border border-line bg-white shadow-lift"
+          >
+            <div className="flex items-center gap-3 bg-navy-800 p-4">
+              <Avatar user={user} size={40} />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-white">
                   {user.name}
                 </p>
-                <p
-                  className="text-xs text-gray-500 truncate"
-                  title={user.email}
-                >
+                <p className="truncate text-xs text-navy-200" title={user.email}>
                   {user.email}
                 </p>
               </div>
             </div>
-          </div>
 
-          <div className="p-2 flex flex-col gap-1">
-            <Link
-              href="/settings"
-              onClick={() => setIsOpen(false)}
-              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
-            >
-              Account Settings
-            </Link>
-            <button
-              onClick={() => logout()}
-              className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            >
-              Log Out
-            </button>
-          </div>
-        </div>
-      )}
+            <div className="p-1.5">
+              <Link
+                href="/settings"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-ink transition-colors hover:bg-canvas"
+              >
+                <Settings className="size-4 text-muted" />
+                Account settings
+              </Link>
+              <button
+                onClick={() => logout()}
+                className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-rose-600 transition-colors hover:bg-rose-50"
+              >
+                <LogOut className="size-4" />
+                Log out
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { Receipt } from "lucide-react";
 import { getPaginatedSales } from "@/lib/actions/sales";
 import Pagination, { PAGE_SIZE } from "@/components/ui/Pagination";
+import { EmptyState } from "@/components/ui/motion";
 import { usePagination } from "@/lib/hooks/use-pagination";
 import SaleRow from "@/components/features/sales/SaleRow";
 import SaleItemsModal from "@/components/features/sales/SaleItemsModal";
@@ -23,6 +25,7 @@ export default function SaleTable({
   onOrderChange,
 }: SaleTableProps) {
   const [sales, setSales] = useState<Sale[]>([]);
+  const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
   const { currentPage, handlePageChange } = usePagination();
   const [viewingSaleItems, setViewingSaleItems] = useState<Sale | null>(null);
@@ -44,6 +47,8 @@ export default function SaleTable({
         setTotalPages(Math.ceil(res.total / PAGE_SIZE));
       } catch (err) {
         console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
@@ -55,50 +60,58 @@ export default function SaleTable({
         sale={viewingSaleItems}
         onClose={() => setViewingSaleItems(null)}
       />
-      <div className="pt-2 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full bg-white text-left text-sm sm:text-base">
-            <thead>
-              <tr>
-                <th className="py-2 px-4 hidden md:table-cell">Invoice</th>
-                <th className="py-2 px-4">Customer</th>
-                <th className="py-2 px-4 hidden md:table-cell">Date</th>
-                <th className="py-2 px-4">Items</th>
-                <th className="py-2 px-4">Total</th>
-                <th className="py-2 px-4 hidden lg:table-cell">Payment</th>
-                <th className="py-2 px-4">Status</th>
-                <th className="py-2 px-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="border-t border-gray-200">
-              {sales.map((sale) => (
-                <SaleRow
-                  key={sale.id}
-                  sale={sale}
-                  onViewItems={() => setViewingSaleItems(sale)}
-                  onOrderChange={onOrderChange}
-                />
-              ))}
-              {sales.length === 0 && (
-                <tr>
-                  <td
-                    colSpan={8}
-                    className="py-8 text-center text-gray-500 italic"
-                  >
-                    No sales found matching filters.
+      <div className="overflow-x-auto border-t border-line">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th className="hidden md:table-cell">Invoice</th>
+              <th>Customer</th>
+              <th className="hidden md:table-cell">Date</th>
+              <th>Items</th>
+              <th className="text-right">Total</th>
+              <th className="hidden lg:table-cell">Payment</th>
+              <th>Status</th>
+              <th className="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading &&
+              sales.length === 0 &&
+              [0, 1, 2, 3].map((i) => (
+                <tr key={`sk-${i}`}>
+                  <td colSpan={8}>
+                    <div className="skeleton h-6" />
                   </td>
                 </tr>
-              )}
-            </tbody>
-          </table>
-
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
+              ))}
+            {sales.map((sale, index) => (
+              <SaleRow
+                key={sale.id}
+                sale={sale}
+                index={index}
+                onViewItems={() => setViewingSaleItems(sale)}
+                onOrderChange={onOrderChange}
+              />
+            ))}
+          </tbody>
+        </table>
+        {!loading && sales.length === 0 && (
+          <EmptyState
+            icon={Receipt}
+            title="No sales yet"
+            description={
+              statusFilter || methodFilter || searchQuery
+                ? "No invoices match the current filters."
+                : "Record your first sale to see it here."
+            }
           />
-        </div>
+        )}
       </div>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
     </>
   );
 }

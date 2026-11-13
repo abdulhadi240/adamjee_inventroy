@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useActionState, useEffect, useTransition } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { updateProduct, deleteProduct } from "@/lib/actions/products";
@@ -10,7 +9,9 @@ import { Button } from "@/components/ui/Button";
 import InfoRow from "@/components/ui/InfoRow";
 import LabeledInput from "@/components/ui/LabeledInput";
 import ImageDropzone from "@/components/ui/ImageDropzone";
-import { EditIcon, DeleteIcon, SaveIcon, CloseIcon } from "@/components/icons";
+import { Check, Copy, ExternalLink, Pencil, Trash2, X } from "lucide-react";
+import { AnimatedCard, CardHeader } from "@/components/ui/motion";
+import { hasProductImage } from "@/components/features/inventory/ProductThumb";
 import {
   formatCurrency,
   formatDisplayPhoneNumber,
@@ -31,7 +32,6 @@ const initialState: { success: boolean; message: string } = {
 
 export default function ProductOverviewTab({
   product,
-  stockStats,
 }: {
   product: Product;
   stockStats: StockStats | null;
@@ -51,9 +51,6 @@ export default function ProductOverviewTab({
   );
   const [isDeleting, startDeleteTransition] = useTransition();
 
-  const pending = stockStats?.pendingStock ?? 0;
-  const shipped = stockStats?.shippedStock ?? 0;
-
   useEffect(() => {
     if (updateState.message) {
       alert(updateState.message);
@@ -70,7 +67,9 @@ export default function ProductOverviewTab({
     e.preventDefault();
     e.stopPropagation();
     setIsEditing(true);
-    setNewImagePreviewUrl(product.product_image || null);
+    setNewImagePreviewUrl(
+      hasProductImage(product.product_image) ? product.product_image : null
+    );
     setNewImageFile(null);
   };
 
@@ -98,7 +97,9 @@ export default function ProductOverviewTab({
       setNewImagePreviewUrl(URL.createObjectURL(file));
     } else {
       setNewImageFile(null);
-      setNewImagePreviewUrl(product.product_image);
+      setNewImagePreviewUrl(
+        hasProductImage(product.product_image) ? product.product_image : null
+      );
     }
   };
 
@@ -112,42 +113,33 @@ export default function ProductOverviewTab({
   };
 
   const Container = isEditing ? "form" : "div";
+  const link = product.supplier?.purchase_link;
 
   return (
-    <Container
-      action={isEditing ? formAction : undefined}
-      className="bg-white p-6 rounded-lg shadow-sm border border-gray-100"
-    >
+    <Container action={isEditing ? formAction : undefined}>
       {isEditing && <input type="hidden" name="id" value={product.id} />}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b pb-4 gap-4">
-        <div>
-          <h2 className="text-lg font-bold text-gray-900">Product Overview</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            Manage details and stock information for{" "}
-            <span className="font-semibold text-gray-900">
-              {product.product_name}
-            </span>
-          </p>
-        </div>
+
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted">
+          {isEditing
+            ? "Editing product details. Changes apply after saving."
+            : "Product details and supplier information."}
+        </p>
         <div className="flex items-center gap-2">
           {isEditing ? (
             <>
               <Button
-                type="submit"
-                variant="primary"
-                disabled={isPending}
-                className="flex items-center gap-2"
-              >
-                <SaveIcon className="w-4 h-4" /> Save
-              </Button>
-              <Button
                 type="button"
                 variant="secondary"
+                size="sm"
                 onClick={handleCancelEdit}
                 disabled={isPending}
-                className="flex items-center gap-2"
               >
-                <CloseIcon className="w-4 h-4" /> Cancel
+                <X className="size-3.5" /> Cancel
+              </Button>
+              <Button type="submit" size="sm" disabled={isPending}>
+                <Check className="size-3.5" />
+                {isPending ? "Saving…" : "Save changes"}
               </Button>
             </>
           ) : (
@@ -155,175 +147,140 @@ export default function ProductOverviewTab({
               <Button
                 type="button"
                 variant="secondary"
+                size="sm"
                 onClick={handleEdit}
-                className="flex items-center gap-2"
               >
-                <EditIcon className="w-4 h-4" /> Edit
+                <Pencil className="size-3.5" /> Edit
               </Button>
               <Button
                 type="button"
-                variant="secondary"
+                variant="danger"
+                size="sm"
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="flex items-center gap-2 text-red-600 hover:bg-red-50 hover:border-red-200"
               >
-                <DeleteIcon className="w-4 h-4" /> Delete
+                <Trash2 className="size-3.5" />
+                {isDeleting ? "Deleting…" : "Delete"}
               </Button>
             </>
           )}
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-8">
-        <div className="w-full md:w-2/3 flex flex-col gap-6">
-          <div>
-            <h3 className="font-bold text-gray-900 mb-4">
-              Product Information
-            </h3>
-            <div className="flex flex-col gap-3">
-              {isEditing ? (
-                <>
-                  <LabeledInput
-                    id="product_name"
-                    label="Product Name"
-                    name="product_name"
-                    defaultValue={product.product_name}
-                  />
-                  <LabeledInput
-                    id="product_type"
-                    label="Type"
-                    name="product_type"
-                    defaultValue={product.product_type}
-                  />
-                  <LabeledInput
-                    id="product_category"
-                    label="Category"
-                    name="product_category"
-                    defaultValue={product.product_category}
-                  />
-                  <LabeledInput
-                    id="buy_price"
-                    label="Buy Price"
-                    name="buy_price"
-                    type="number"
-                    defaultValue={product.buy_price}
-                  />
-                  <LabeledInput
-                    id="sell_price"
-                    label="Sell Price"
-                    name="sell_price"
-                    type="number"
-                    defaultValue={product.sell_price}
-                  />
-                </>
-              ) : (
-                <>
-                  <InfoRow label="Product Name" value={product.product_name} />
-                  <InfoRow label="Type" value={product.product_type} />
-                  <InfoRow label="Category" value={product.product_category} />
-                  <InfoRow
-                    label="Buy Price"
-                    value={formatCurrency(product.buy_price)}
-                  />
-                  <InfoRow
-                    label="Sell Price"
-                    value={formatCurrency(product.sell_price)}
-                  />
-                </>
-              )}
+      <div className="grid gap-4 lg:grid-cols-3">
+        <AnimatedCard className="lg:col-span-2">
+          <CardHeader title="Product information" />
+          {isEditing ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <LabeledInput
+                  id="product_name"
+                  label="Product name"
+                  name="product_name"
+                  defaultValue={product.product_name}
+                />
+              </div>
+              <LabeledInput
+                id="product_type"
+                label="Type / model"
+                name="product_type"
+                defaultValue={product.product_type}
+              />
+              <LabeledInput
+                id="product_category"
+                label="Category"
+                name="product_category"
+                defaultValue={product.product_category}
+              />
+              <LabeledInput
+                id="buy_price"
+                label="Cost price (Rs)"
+                name="buy_price"
+                type="number"
+                defaultValue={product.buy_price}
+              />
+              <LabeledInput
+                id="sell_price"
+                label="Sell price (Rs)"
+                name="sell_price"
+                type="number"
+                defaultValue={product.sell_price}
+              />
             </div>
-          </div>
-
-          <div>
-            <h3 className="font-bold text-gray-900 mb-4">
-              Supplier Information
-            </h3>
-            <div className="flex flex-col gap-3">
-              <InfoRow label="Name" value={product.supplier?.supplier_name} />
+          ) : (
+            <div>
+              <InfoRow label="Product name" value={product.product_name} />
+              <InfoRow label="Type / model" value={product.product_type} />
               <InfoRow
-                label="Contact"
+                label="Category"
                 value={
-                  <span
-                    className="cursor-pointer hover:text-blue-600"
+                  <span className="capitalize">{product.product_category}</span>
+                }
+              />
+              <InfoRow
+                label="Cost price"
+                value={formatCurrency(product.buy_price)}
+              />
+              <InfoRow
+                label="Sell price"
+                value={formatCurrency(product.sell_price)}
+              />
+            </div>
+          )}
+        </AnimatedCard>
+
+        {isEditing ? (
+          <AnimatedCard>
+            <CardHeader title="Product image" />
+            <ImageDropzone
+              name="image_file"
+              previewUrl={newImagePreviewUrl}
+              onChange={handleFileChange}
+            />
+          </AnimatedCard>
+        ) : (
+          <AnimatedCard>
+            <CardHeader title="Supplier" />
+            <InfoRow label="Name" value={product.supplier?.supplier_name} />
+            <InfoRow
+              label="Contact"
+              value={
+                product.supplier?.contact_number ? (
+                  <button
+                    type="button"
                     onClick={handleCopyPhone}
+                    title="Copy number"
+                    className="group inline-flex cursor-pointer items-center gap-1.5 transition-colors hover:text-navy-600"
                   >
                     {isCopied
                       ? "Copied!"
-                      : formatDisplayPhoneNumber(
-                          product.supplier?.contact_number ?? null
-                        )}
-                  </span>
-                }
-              />
-              <InfoRow
-                label="Link"
-                value={
-                  <Link
-                    href={formatPurchaseLink(
-                      product.supplier?.purchase_link ?? null
+                      : formatDisplayPhoneNumber(product.supplier.contact_number)}
+                    {isCopied ? (
+                      <Check className="size-3.5 text-emerald-600" />
+                    ) : (
+                      <Copy className="size-3.5 text-muted opacity-0 transition-opacity group-hover:opacity-100" />
                     )}
+                  </button>
+                ) : undefined
+              }
+            />
+            <InfoRow
+              label="Purchase link"
+              value={
+                link ? (
+                  <Link
+                    href={formatPurchaseLink(link)}
                     target="_blank"
-                    className="text-blue-600 hover:underline"
+                    className="link inline-flex max-w-44 items-center gap-1"
                   >
-                    {product.supplier?.purchase_link}
+                    <span className="truncate">{link}</span>
+                    <ExternalLink className="size-3.5 shrink-0" />
                   </Link>
-                }
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="w-full md:w-1/3 flex flex-col gap-6">
-          <div>
-            {isEditing ? (
-              <ImageDropzone
-                name="image_file"
-                previewUrl={
-                  newImagePreviewUrl || product.product_image || "/product.svg"
-                }
-                onChange={handleFileChange}
-              />
-            ) : (
-              <div className="border rounded-lg p-4 flex justify-center bg-gray-50">
-                <Image
-                  src={
-                    product.product_image && product.product_image.trim() !== ""
-                      ? product.product_image
-                      : "/product.svg"
-                  }
-                  width={200}
-                  height={200}
-                  alt={product.product_name}
-                  className="object-contain h-48 w-full"
-                />
-              </div>
-            )}
-          </div>
-
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-sm text-gray-900 mb-3 uppercase">
-              Inventory Status
-            </h4>
-            <div className="flex flex-col gap-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Current Stock</span>
-                <span className="font-medium">{product.amount_stock}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Pending</span>
-                <span className="font-medium text-orange-600">+{pending}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Shipped</span>
-                <span className="font-medium text-blue-600">+{shipped}</span>
-              </div>
-              <div className="border-t pt-2 mt-2 flex justify-between font-bold">
-                <span>Projected</span>
-                <span>{product.amount_stock + pending + shipped}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+                ) : undefined
+              }
+            />
+          </AnimatedCard>
+        )}
       </div>
     </Container>
   );

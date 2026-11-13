@@ -5,11 +5,13 @@
 /**
  * Represents the outcome of a form submission or server action.
  */
-export type FormState = {
+export type FormState<T = unknown> = {
   /** Indicates whether the form submission was successful. */
   success: boolean;
   /** A feedback message to be displayed to the user. */
   message: string;
+  /** The created/updated record, when the action returns one. */
+  data?: T;
 };
 
 // -----------------------------------------------------------------------------------------------------------------------------
@@ -210,7 +212,7 @@ export interface Sale {
   total_amount: number;
   /** The calculated total profit generated from this sale. */
   total_profit: number;
-  /** The method used for payment (e.g., 'Cash', 'Card', 'Transfer'). */
+  /** The method used for payment (e.g., 'Cash', 'Bank Transfer', 'JazzCash'). */
   payment_method: string;
   /** The status of the payment (e.g., 'Paid', 'Pending'). */
   payment_status: string;

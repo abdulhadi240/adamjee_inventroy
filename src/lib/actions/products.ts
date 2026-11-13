@@ -1,7 +1,7 @@
 "use server";
 
 import { createClientServer } from "@/lib/supabase/server";
-import { Product, FormState } from "@/lib/types";
+import { Product, ProductOption, FormState } from "@/lib/types";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
@@ -29,9 +29,9 @@ export async function uploadProductImage(file: File): Promise<string | null> {
 }
 
 export async function insertProduct(
-  previousState: FormState,
+  previousState: FormState<ProductOption>,
   formData: FormData
-): Promise<FormState> {
+): Promise<FormState<ProductOption>> {
   const supabase = await createClientServer();
 
   const {
@@ -87,17 +87,23 @@ export async function insertProduct(
     imageUrl = uploadedUrl;
   }
 
-  const { error } = await supabase.from("products").insert({
-    product_name: name,
-    product_type: type,
-    product_category: category,
-    amount_stock: amount_stock,
-    buy_price: buy_price,
-    sell_price: sell_price,
-    product_image: imageUrl,
-    user_id: user.id,
-    supplier_id: supplier_id,
-  });
+  const { data, error } = await supabase
+    .from("products")
+    .insert({
+      product_name: name,
+      product_type: type,
+      product_category: category,
+      amount_stock: amount_stock,
+      buy_price: buy_price,
+      sell_price: sell_price,
+      product_image: imageUrl,
+      user_id: user.id,
+      supplier_id: supplier_id,
+    })
+    .select(
+      "id, product_name, product_type, buy_price, sell_price, amount_stock, supplier_id"
+    )
+    .single();
 
   if (error) {
     console.error("Failed to insert product:", error.message);
@@ -105,7 +111,11 @@ export async function insertProduct(
   }
 
   revalidatePath("/inventory");
-  return { success: true, message: "Product added successfully!" };
+  return {
+    success: true,
+    message: "Product added successfully!",
+    data: { ...data, id: String(data.id) },
+  };
 }
 
 export async function updateProduct(

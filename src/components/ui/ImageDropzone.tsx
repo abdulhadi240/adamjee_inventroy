@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { ImagePlus } from "lucide-react";
 
 interface ImageDropzoneProps {
   name: string;
@@ -28,11 +30,8 @@ export default function ImageDropzone({
     }
 
     if (file.size > MAX_FILE_SIZE_BYTES) {
-      const errorMsg = `File is too large. Max size is ${MAX_FILE_SIZE_MB}MB.`;
-      setError(errorMsg);
-
+      setError(`File is too large. Max size is ${MAX_FILE_SIZE_MB}MB.`);
       setTimeout(() => setError(null), 3000);
-
       onChange(null);
       return;
     }
@@ -40,44 +39,68 @@ export default function ImageDropzone({
     onChange(file);
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
     if (file) handleFileChange(file);
   };
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
   return (
-    <div
-      className={`border-2 border-dashed rounded-lg p-3 w-full max-w-xs mx-auto 
-                  flex flex-col items-center justify-center cursor-pointer transition-all ${
-                    isDragging ? "border-blue-500" : "border-gray-300"
-                  }`}
-      onDragEnter={() => setIsDragging(true)}
-      onDragLeave={() => setIsDragging(false)}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
-    >
-      {previewUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={previewUrl}
-          alt="Selected"
-          className="w-full h-auto rounded-md mb-3"
-        />
-      ) : (
-        <>
-          <p className="text-gray-600 text-center">Drag Image here</p>
-          <span className="text-gray-400 my-1">or</span>
-        </>
-      )}
-      <label className="text-blue-600 px-4 cursor-pointer hover:text-blue-400">
-        {previewUrl ? "Change Image" : "Browse Image"}
+    <div>
+      <label
+        className={`group relative flex min-h-36 w-full cursor-pointer flex-col items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed p-4 text-center transition-all duration-300 ${
+          isDragging
+            ? "border-navy-500 bg-navy-50"
+            : "border-line bg-canvas/60 hover:border-navy-200 hover:bg-navy-50/50"
+        }`}
+        onDragEnter={() => setIsDragging(true)}
+        onDragLeave={() => setIsDragging(false)}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragging(true);
+        }}
+        onDrop={handleDrop}
+      >
+        <AnimatePresence mode="wait">
+          {previewUrl ? (
+            <motion.div
+              key="preview"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              className="relative w-full"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={previewUrl}
+                alt="Selected"
+                className="mx-auto max-h-48 rounded-xl object-contain"
+              />
+              <span className="mt-3 inline-block text-xs font-semibold text-navy-600 group-hover:text-navy-800">
+                Change image
+              </span>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col items-center"
+            >
+              <span className="mb-2 grid size-11 place-items-center rounded-xl bg-white text-navy-500 shadow-card">
+                <ImagePlus className="size-5" />
+              </span>
+              <p className="text-sm font-medium text-ink">
+                Drop an image or <span className="text-navy-600">browse</span>
+              </p>
+              <p className="mt-0.5 text-xs text-muted">
+                PNG, JPG or WEBP · up to {MAX_FILE_SIZE_MB}MB
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <input
           type="file"
           name={name}
@@ -86,9 +109,7 @@ export default function ImageDropzone({
           onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
         />
       </label>
-      {error && (
-        <p className="text-red-500 text-sm mt-2 text-center">{error}</p>
-      )}
+      {error && <p className="mt-2 text-center text-xs text-rose-600">{error}</p>}
     </div>
   );
 }

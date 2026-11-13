@@ -1,13 +1,16 @@
 "use client";
 
 import { useState, useActionState, useEffect, useRef } from "react";
+import { AlertTriangle, CircleCheck, CircleX, Truck } from "lucide-react";
 import { insertOrder } from "@/lib/actions/orders";
 import { Button } from "@/components/ui/Button";
 import LabeledInput from "@/components/ui/LabeledInput";
 import LabeledSelect from "@/components/ui/LabeledSelect";
+import { AnimatedCard, CardHeader } from "@/components/ui/motion";
 import { Product, FormState } from "@/lib/types";
 import { ORDER_STATUSES } from "@/lib/constants";
 import { formatCurrency } from "@/lib/utils/formatters";
+import DatePicker from "@/components/ui/DatePicker";
 
 const initialState: FormState = { success: false, message: "" };
 
@@ -49,69 +52,71 @@ export default function ProductPurchaseTab({
     },
   ]);
 
+  const qty = parseInt(quantity || "0", 10) || 0;
+  const unitCost = parseFloat(cost || "0") || 0;
+
   if (!product.supplier) {
     return (
-      <div className="p-6 bg-yellow-50 text-yellow-800 rounded-lg border border-yellow-200">
-        <h3 className="font-bold">Missing Supplier</h3>
-        <p className="text-sm mt-1">
-          This product is not linked to any supplier. Please edit the product
-          details to assign a supplier before creating a purchase order.
-        </p>
-      </div>
+      <AnimatedCard className="flex items-start gap-3 border-amber-200 bg-amber-50/60">
+        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-700">
+          <AlertTriangle className="size-4" />
+        </span>
+        <div>
+          <h3 className="text-sm font-semibold text-amber-900">
+            No supplier linked
+          </h3>
+          <p className="mt-0.5 text-xs text-amber-800/80">
+            Assign a supplier to this product before creating a purchase order.
+          </p>
+        </div>
+      </AnimatedCard>
     );
   }
 
   return (
-    <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-      <div className="mb-6 border-b pb-4">
-        <h2 className="text-lg font-bold text-gray-900">Restock Product</h2>
-        <p className="text-sm text-gray-500">
-          Create a new purchase order specifically for{" "}
-          <span className="font-semibold text-gray-900">
-            {product.product_name}
-          </span>
-        </p>
-      </div>
+    <form
+      ref={formRef}
+      action={formAction}
+      className="grid gap-4 lg:grid-cols-3"
+    >
+      <input type="hidden" name="supplier_id" value={product.supplier.id} />
+      <input type="hidden" name="items" value={itemsPayload} />
 
-      <form ref={formRef} action={formAction} className="flex flex-col gap-6">
-        <input type="hidden" name="supplier_id" value={product.supplier.id} />
-        <input type="hidden" name="items" value={itemsPayload} />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">
-              Supplier
-            </label>
-            <div className="p-2.5 bg-gray-100 border border-gray-300 rounded-md text-gray-600 text-sm">
-              {product.supplier.supplier_name}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">
-              Total Estimated Cost
-            </label>
-            <div className="p-2.5 bg-blue-50 border border-blue-100 rounded-md text-blue-700 font-bold text-sm">
-              {formatCurrency(
-                parseInt(quantity || "0") * parseFloat(cost || "0")
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <AnimatedCard className="lg:col-span-2">
+        <CardHeader
+          title="Restock this product"
+          subtitle="Creates a purchase order with the linked supplier."
+        />
+        <div className="grid gap-4 sm:grid-cols-2">
           <LabeledInput
-            label="Expected Delivery Date"
-            id="expected_delivery_date"
-            name="expected_delivery_date"
-            type="date"
-            value={expectedDate}
-            onChange={(e) => setExpectedDate(e.target.value)}
+            label="Quantity to order"
+            id="quantity"
+            type="number"
+            min={1}
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
             required
           />
-
+          <LabeledInput
+            label="Cost per item (Rs)"
+            id="cost"
+            type="number"
+            min={0}
+            step="0.01"
+            value={cost}
+            onChange={(e) => setCost(e.target.value)}
+            required
+          />
+          <DatePicker
+            label="Expected delivery"
+            name="expected_delivery_date"
+            value={expectedDate}
+            onChange={setExpectedDate}
+            placeholder="Pick a delivery date"
+            required
+          />
           <LabeledSelect
-            label="Order Status"
+            label="Order status"
             id="status"
             name="status"
             value={status}
@@ -126,51 +131,59 @@ export default function ProductPurchaseTab({
           </LabeledSelect>
         </div>
 
-        <div className="p-4 bg-gray-50 rounded-md border border-gray-200">
-          <h3 className="font-medium text-gray-900 mb-4 text-sm uppercase tracking-wide">
-            Item Configuration
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <LabeledInput
-              label="Quantity to Order"
-              id="quantity"
-              type="number"
-              min={1}
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              required
-            />
-            <LabeledInput
-              label="Cost per Item"
-              id="cost"
-              type="number"
-              min={0}
-              step="0.01"
-              value={cost}
-              onChange={(e) => setCost(e.target.value)}
-              required
-            />
-          </div>
-        </div>
-
         {state.message && (
           <div
-            className={`p-3 text-sm rounded-md ${
+            className={`mt-4 flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm ${
               state.success
-                ? "bg-green-50 text-green-700 border border-green-200"
-                : "bg-red-50 text-red-700 border border-red-200"
+                ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100"
+                : "bg-rose-50 text-rose-700 ring-1 ring-rose-100"
             }`}
           >
+            {state.success ? (
+              <CircleCheck className="size-4 shrink-0" />
+            ) : (
+              <CircleX className="size-4 shrink-0" />
+            )}
             {state.message}
           </div>
         )}
+      </AnimatedCard>
 
-        <div className="flex justify-end pt-2">
-          <Button type="submit" disabled={isPending}>
-            {isPending ? "Processing..." : "Create Order"}
-          </Button>
+      <AnimatedCard className="flex flex-col">
+        <CardHeader title="Order summary" />
+        <div className="flex items-center gap-2.5 rounded-xl border border-line bg-canvas/60 p-3">
+          <span className="grid size-8 place-items-center rounded-lg bg-navy-50 text-navy-600">
+            <Truck className="size-4" />
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-ink">
+              {product.supplier.supplier_name}
+            </p>
+            <p className="text-[11px] text-muted">Supplier</p>
+          </div>
         </div>
-      </form>
-    </div>
+        <div className="mt-4 space-y-2 text-sm">
+          <div className="flex justify-between text-muted">
+            <span>Quantity</span>
+            <span className="font-medium text-ink tabular-nums">{qty}</span>
+          </div>
+          <div className="flex justify-between text-muted">
+            <span>Unit cost</span>
+            <span className="font-medium text-ink tabular-nums">
+              {formatCurrency(unitCost)}
+            </span>
+          </div>
+        </div>
+        <div className="mt-4 border-t border-line pt-4">
+          <p className="text-xs text-muted">Estimated total</p>
+          <p className="text-2xl font-semibold tracking-tight text-navy-700 tabular-nums">
+            {formatCurrency(qty * unitCost)}
+          </p>
+        </div>
+        <Button type="submit" disabled={isPending} className="mt-5 w-full">
+          {isPending ? "Creating…" : "Create purchase order"}
+        </Button>
+      </AnimatedCard>
+    </form>
   );
 }

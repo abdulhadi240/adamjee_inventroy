@@ -1,28 +1,32 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { Check, Copy, Pencil, Trash2, X } from "lucide-react";
 import { updateCustomer, deleteCustomer } from "@/lib/actions/customers";
 import {
   formatDisplayPhoneNumber,
   formatToLocalPhone,
 } from "@/lib/utils/formatters";
 import { copyToClipboard } from "@/lib/utils/clipboard";
-import { Button } from "@/components/ui/Button";
-import { EditIcon, DeleteIcon, SaveIcon, CloseIcon } from "@/components/icons";
 import { Customer } from "@/lib/types";
 
 interface CustomerRowProps {
   customer: Customer;
+  index?: number;
   onOrderChange: () => void;
 }
 
+const iconBtn =
+  "grid size-8 cursor-pointer place-items-center rounded-full text-muted transition-all duration-200 disabled:pointer-events-none disabled:opacity-30";
+
 export default function CustomerRow({
   customer,
+  index = 0,
   onOrderChange,
 }: CustomerRowProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-
   const [isPending, startTransition] = useTransition();
 
   const [editData, setEditData] = useState({
@@ -32,18 +36,13 @@ export default function CustomerRow({
   });
 
   const handleCopyPhone = async () => {
-    if (isEditing) return;
-
-    const localPhone = formatToLocalPhone(customer.contact_number);
-    const success = await copyToClipboard(localPhone);
-
+    if (isEditing || !customer.contact_number) return;
+    const success = await copyToClipboard(
+      formatToLocalPhone(customer.contact_number)
+    );
     if (success) {
       setIsCopied(true);
-      setTimeout(() => {
-        setIsCopied(false);
-      }, 2000);
-    } else {
-      alert("Failed to copy phone number.");
+      setTimeout(() => setIsCopied(false), 1600);
     }
   };
 
@@ -58,7 +57,6 @@ export default function CustomerRow({
       const result = await updateCustomer(null, formData);
       if (result.success) {
         setIsEditing(false);
-        alert("Customer updated!");
         onOrderChange();
       } else {
         alert(result.message);
@@ -67,12 +65,11 @@ export default function CustomerRow({
   };
 
   const handleDelete = () => {
-    if (!confirm("Are you sure? This will delete the customer.")) return;
+    if (!confirm(`Delete ${customer.name}?`)) return;
 
     startTransition(async () => {
       const result = await deleteCustomer(customer.id);
       if (result.success) {
-        alert("Customer deleted!");
         onOrderChange();
       } else {
         alert(result.message);
@@ -80,22 +77,38 @@ export default function CustomerRow({
     });
   };
 
+  const initials = customer.name
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
   return (
-    <tr className="hover:bg-gray-100">
-      <td className="py-2 px-4">
+    <motion.tr
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: isPending ? 0.5 : 1, y: 0 }}
+      transition={{ duration: 0.35, delay: index * 0.035, ease: [0.16, 1, 0.3, 1] }}
+    >
+      <td>
         {isEditing ? (
           <input
             type="text"
             value={editData.name}
             onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-            className="border rounded p-1 w-full"
+            className="field h-8 py-1 text-xs"
             disabled={isPending}
           />
         ) : (
-          customer.name
+          <div className="flex items-center gap-2.5">
+            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-navy-50 ring-1 ring-navy-100 text-[11px] font-semibold text-navy-700">
+              {initials || "?"}
+            </span>
+            <span className="font-medium">{customer.name}</span>
+          </div>
         )}
       </td>
-      <td className="py-2 px-4">
+      <td className="hidden max-w-xs text-muted md:table-cell">
         {isEditing ? (
           <input
             type="text"
@@ -103,81 +116,105 @@ export default function CustomerRow({
             onChange={(e) =>
               setEditData({ ...editData, address: e.target.value })
             }
-            className="border rounded p-1 w-full"
+            className="field h-8 py-1 text-xs"
             disabled={isPending}
           />
         ) : (
-          customer.address
+          <span className="line-clamp-1">{customer.address || "—"}</span>
         )}
       </td>
-      <td className="py-2 px-4 cursor-pointer" onClick={handleCopyPhone}>
+      <td>
         {isEditing ? (
           <input
-            type="number"
+            type="tel"
+            inputMode="tel"
             value={editData.contact_number}
             onChange={(e) =>
               setEditData({ ...editData, contact_number: e.target.value })
             }
-            className="border rounded p-1 w-full no-spinner"
+            className="field h-8 py-1 text-xs"
             disabled={isPending}
           />
         ) : (
-          <span
-            className={`cursor-pointer ${
-              isCopied ? "text-green-600 font-bold" : ""
-            }`}
+          <button
+            type="button"
+            onClick={handleCopyPhone}
+            title="Copy phone number"
+            className="group inline-flex cursor-pointer items-center gap-1.5 tabular-nums transition-colors hover:text-navy-700"
           >
-            {isCopied
-              ? "Copied!"
-              : formatDisplayPhoneNumber(customer.contact_number)}
-          </span>
+            <AnimatePresence mode="wait" initial={false}>
+              {isCopied ? (
+                <motion.span
+                  key="copied"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className="inline-flex items-center gap-1 font-semibold text-emerald-600"
+                >
+                  <Check className="size-3.5" /> Copied
+                </motion.span>
+              ) : (
+                <motion.span
+                  key="phone"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className="inline-flex items-center gap-1.5"
+                >
+                  {formatDisplayPhoneNumber(customer.contact_number)}
+                  <Copy className="size-3 text-muted opacity-0 transition-opacity group-hover:opacity-100" />
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </button>
         )}
       </td>
-      <td className="py-2 px-4">
-        <div className="flex gap-2">
+      <td>
+        <div className="flex justify-end gap-1">
           {isEditing ? (
             <>
-              <Button
+              <button
                 type="button"
-                variant="primary"
                 onClick={handleSave}
                 disabled={isPending}
-                className="p-1 text-xs"
+                aria-label="Save"
+                className={`${iconBtn} bg-navy-700 text-white hover:bg-navy-600`}
               >
-                <SaveIcon className="w-4 h-4" />
-              </Button>
-              <Button
+                <Check className="size-4" />
+              </button>
+              <button
                 type="button"
-                variant="secondary"
                 onClick={() => setIsEditing(false)}
                 disabled={isPending}
-                className="p-1 text-xs"
+                aria-label="Cancel"
+                className={`${iconBtn} hover:bg-navy-50 hover:text-ink`}
               >
-                <CloseIcon className="w-4 h-4" />
-              </Button>
+                <X className="size-4" />
+              </button>
             </>
           ) : (
             <>
-              <Button
+              <button
                 type="button"
-                variant="secondary"
                 onClick={() => setIsEditing(true)}
-                className="p-1 text-xs"
+                aria-label="Edit"
+                className={`${iconBtn} hover:bg-navy-50 hover:text-navy-700`}
               >
-                <EditIcon className="w-4 h-4" />
-              </Button>
-              <Button
+                <Pencil className="size-3.5" />
+              </button>
+              <button
                 type="button"
-                variant="secondary"
                 onClick={handleDelete}
-                className="p-1 text-xs text-red-500"
+                disabled={isPending}
+                aria-label="Delete"
+                className={`${iconBtn} hover:bg-rose-50 hover:text-rose-600`}
               >
-                <DeleteIcon className="w-4 h-4" />
-              </Button>
+                <Trash2 className="size-3.5" />
+              </button>
             </>
           )}
         </div>
       </td>
-    </tr>
+    </motion.tr>
   );
 }

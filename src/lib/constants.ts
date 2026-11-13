@@ -4,70 +4,62 @@ import {
   ReportsIcon,
   SuppliersIcon,
   OrdersIcon,
+  SalesIcon,
+  CustomersIcon,
   SettingsIcon,
 } from "@/components/icons";
-import React from "react";
-
-type IconComponent = React.ComponentType<React.SVGProps<SVGSVGElement>>;
+import type { LucideIcon } from "lucide-react";
 
 export const LOW_STOCK_THRESHOLD = 10;
 
 export interface NavLink {
   href: string;
   label: string;
-  icon: IconComponent;
+  icon: LucideIcon;
 }
 
-export const MAIN_NAV_LINKS: NavLink[] = [
+export interface NavSection {
+  title: string;
+  links: NavLink[];
+}
+
+export const NAV_SECTIONS: NavSection[] = [
   {
-    href: "/dashboard",
-    label: "Dashboard",
-    icon: DashboardIcon,
+    title: "Overview",
+    links: [
+      { href: "/dashboard", label: "Dashboard", icon: DashboardIcon },
+      { href: "/reports", label: "Reports", icon: ReportsIcon },
+    ],
   },
   {
-    href: "/sales",
-    label: "Sales",
-    icon: OrdersIcon,
+    title: "Stock",
+    links: [
+      { href: "/inventory", label: "Inventory", icon: InventoryIcon },
+      { href: "/orders", label: "Purchase Orders", icon: OrdersIcon },
+      { href: "/suppliers", label: "Suppliers", icon: SuppliersIcon },
+    ],
   },
   {
-    href: "/inventory",
-    label: "Inventory",
-    icon: InventoryIcon,
-  },
-  {
-    href: "/orders",
-    label: "Orders",
-    icon: OrdersIcon,
-  },
-  {
-    href: "/customers",
-    label: "Customers",
-    icon: SuppliersIcon,
-  },
-  {
-    href: "/suppliers",
-    label: "Suppliers",
-    icon: SuppliersIcon,
-  },
-  {
-    href: "/reports",
-    label: "Reports",
-    icon: ReportsIcon,
+    title: "Sales",
+    links: [
+      { href: "/sales", label: "Sales", icon: SalesIcon },
+      { href: "/customers", label: "Customers", icon: CustomersIcon },
+    ],
   },
 ];
 
+export const MAIN_NAV_LINKS: NavLink[] = NAV_SECTIONS.flatMap((s) => s.links);
+
 export const FOOTER_NAV_LINKS: NavLink[] = [
-  {
-    href: "/settings",
-    label: "Settings",
-    icon: SettingsIcon,
-  },
+  { href: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
 export const PAYMENT_METHODS = [
   { label: "Cash", value: "Cash" },
-  { label: "Transfer", value: "Transfer" },
-  { label: "QRIS", value: "QRIS" },
+  { label: "Bank Transfer", value: "Bank Transfer" },
+  { label: "JazzCash", value: "JazzCash" },
+  { label: "Easypaisa", value: "Easypaisa" },
+  { label: "Card", value: "Card" },
 ];
 
 export const PAYMENT_STATUSES = [
@@ -82,9 +74,12 @@ export const ORDER_STATUSES = [
 ];
 
 export const PRODUCT_CATEGORIES = [
-  { label: "Electronics", value: "electronics" },
-  { label: "Clothing", value: "clothing" },
-  { label: "Home & Furniture", value: "home" },
-  { label: "Beauty & Health", value: "beauty" },
-  { label: "Sports & Outdoors", value: "sports" },
+  { label: "Laptops", value: "Laptops" },
+  { label: "Desktops", value: "Desktops" },
+  { label: "Monitors", value: "Monitors" },
+  { label: "Components", value: "Components" },
+  { label: "Storage", value: "Storage" },
+  { label: "Peripherals", value: "Peripherals" },
+  { label: "Networking", value: "Networking" },
+  { label: "Accessories", value: "Accessories" },
 ];

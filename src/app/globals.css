@@ -1,35 +1,154 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   Adamjee Computers — design tokens
+   Deep navy brand, electric-cyan accent, clean light workspace.
+   ========================================================================== */
 @theme {
-  --font-poppins: var(--font-poppins);
-}
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-sora), var(--font-manrope), ui-sans-serif, sans-serif;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  /* Brand navy */
+  --color-navy-950: #061631;
+  --color-navy-900: #0a2149;
+  --color-navy-800: #102e63;
+  --color-navy-700: #163a6e;
+  --color-navy-600: #1f4f94;
+  --color-navy-500: #2b64b8;
+  --color-navy-400: #5b8bd6;
+  --color-navy-200: #c4d5f0;
+  --color-navy-100: #e3ebf8;
+  --color-navy-50: #f1f5fc;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #F0F1F3;
-    --foreground: #ededed;
+  /* Electric cyan accent (the glow in the brand imagery) */
+  --color-glow-600: #0592c9;
+  --color-glow-500: #10b3ee;
+  --color-glow-400: #38c8ff;
+  --color-glow-300: #7fdcff;
+  --color-glow-100: #dff6ff;
+
+  /* Neutral surfaces */
+  --color-canvas: #f4f6fa;
+  --color-line: #e6e9f0;
+  --color-ink: #0d1b33;
+  --color-muted: #66728a;
+
+  --shadow-card: 0 1px 2px rgb(13 27 51 / 0.04), 0 1px 1px rgb(13 27 51 / 0.03);
+  --shadow-lift: 0 12px 32px -12px rgb(16 46 99 / 0.22), 0 2px 6px rgb(13 27 51 / 0.05);
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-shimmer: shimmer 1.6s linear infinite;
+
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
   }
 }
 
-body {
-  /* color: var(--foreground); */
-  background: var(--background);
-  font-family: var(--font-poppins);
+/* "Zoomed out" density: every rem-based size scales down ~12% */
+html {
+  font-size: 14px;
 }
 
-/* Hide number input spinners for Chrome, Safari, Edge, Opera */
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Sora for headings, Manrope for everything else */
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: var(--color-glow-300);
+  color: var(--color-navy-950);
+}
+
+/* Slim scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c9d1df transparent;
+}
+
+@layer components {
+  /* ---- Cards --------------------------------------------------------- */
+  .card {
+    @apply rounded-2xl border border-line bg-white shadow-card;
+  }
+  .card-title {
+    @apply text-[15px] font-semibold tracking-tight text-ink;
+  }
+  .card-subtitle {
+    @apply text-xs text-muted;
+  }
+
+  /* ---- Tables -------------------------------------------------------- */
+  .data-table {
+    @apply w-full min-w-full text-left text-sm;
+  }
+  .data-table thead th {
+    @apply whitespace-nowrap border-b border-line bg-navy-50/60 px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-muted first:rounded-tl-xl last:rounded-tr-xl;
+  }
+  .data-table tbody td {
+    @apply border-b border-line/70 px-4 py-3 align-middle text-ink;
+  }
+  .data-table tbody tr {
+    @apply transition-colors duration-150;
+  }
+  .data-table tbody tr:hover {
+    @apply bg-navy-50/70;
+  }
+  .data-table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  /* ---- Form controls ------------------------------------------------- */
+  .field-label {
+    @apply mb-1.5 block text-xs font-semibold text-ink/80;
+  }
+  .field {
+    @apply w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm text-ink outline-none transition-all duration-200 placeholder:text-muted/60 hover:border-navy-200 focus:border-navy-500 focus:ring-4 focus:ring-navy-500/10 disabled:cursor-not-allowed disabled:bg-canvas disabled:opacity-60;
+  }
+
+  /* ---- Badges -------------------------------------------------------- */
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold;
+  }
+
+  /* ---- Links --------------------------------------------------------- */
+  .link {
+    @apply font-medium text-navy-600 transition-colors hover:text-glow-600;
+  }
+
+  /* ---- Skeleton shimmer ---------------------------------------------- */
+  .skeleton {
+    @apply animate-shimmer rounded-lg bg-[linear-gradient(90deg,#eef1f6_25%,#f8f9fc_50%,#eef1f6_75%)] bg-[length:200%_100%];
+  }
+}
+
+/* Hide number input spinners */
 .no-spinner::-webkit-inner-spin-button,
 .no-spinner::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
-
-/* Hide number input spinners for Firefox */
 .no-spinner {
   -moz-appearance: textfield;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -1,30 +1,58 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { motion } from "motion/react";
+import { Check, Package, Pencil, Trash2, X } from "lucide-react";
 import { updateSale, deleteSale } from "@/lib/actions/sales";
-import { formatCurrency } from "@/lib/utils/formatters";
-import { Button } from "@/components/ui/Button";
-import { EditIcon, DeleteIcon, SaveIcon, CloseIcon } from "@/components/icons";
+import { formatCurrency, formatDate } from "@/lib/utils/formatters";
 import { Sale } from "@/lib/types";
+import { PAYMENT_METHODS, PAYMENT_STATUSES } from "@/lib/constants";
+import DatePicker from "@/components/ui/DatePicker";
 
 interface SaleRowProps {
   sale: Sale;
+  index?: number;
   onOrderChange: () => void;
   onViewItems: () => void;
 }
 
+const iconBtn =
+  "grid size-8 cursor-pointer place-items-center rounded-full text-muted transition-all duration-200 disabled:pointer-events-none disabled:opacity-30";
+
+export function PaymentBadge({ status }: { status: string }) {
+  const paid = status === "Paid";
+  return (
+    <span
+      className={`badge ${
+        paid
+          ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100"
+          : "bg-amber-50 text-amber-700 ring-1 ring-amber-100"
+      }`}
+    >
+      <span
+        className={`size-1.5 rounded-full ${
+          paid ? "bg-emerald-500" : "bg-amber-500"
+        }`}
+      />
+      {status}
+    </span>
+  );
+}
+
 export default function SaleRow({
   sale,
+  index = 0,
   onOrderChange,
   onViewItems,
 }: SaleRowProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isPending, startTransition] = useTransition();
 
-  const isPaid = sale.payment_status === "Paid";
+  const status = sale.payment_status || "Paid";
+  const isPaid = status === "Paid";
 
   const [editData, setEditData] = useState({
-    payment_status: sale.payment_status || "Paid",
+    payment_status: status,
     payment_method: sale.payment_method,
     sale_date: sale.sale_date
       ? new Date(sale.sale_date).toISOString().split("T")[0]
@@ -43,7 +71,6 @@ export default function SaleRow({
       if (result.success) {
         setIsEditing(false);
         onOrderChange();
-        alert("Sale updated successfully!");
       } else {
         alert(result.message);
       }
@@ -53,7 +80,7 @@ export default function SaleRow({
   const handleDelete = () => {
     if (
       !confirm(
-        "Are you sure? Deleting this sale will RESTORE the stock to inventory."
+        "Delete this sale? The sold quantities will be restored to inventory."
       )
     )
       return;
@@ -61,7 +88,6 @@ export default function SaleRow({
     startTransition(async () => {
       const result = await deleteSale(sale.id);
       if (result.success) {
-        alert(result.message);
         onOrderChange();
       } else {
         alert(result.message);
@@ -69,132 +95,141 @@ export default function SaleRow({
     });
   };
 
-  const getStatusColor = (status: string) => {
-    if (status === "Paid")
-      return "text-green-600 bg-green-50 px-2 py-1 rounded-md";
-    if (status === "Debt") return "text-red-600 bg-red-50 px-2 py-1 rounded-md";
-    return "text-gray-600";
-  };
+  const itemCount = sale.items.reduce((n, i) => n + i.quantity, 0);
 
   return (
-    <tr className="hover:bg-gray-50 transition-colors">
-      <td className="py-3 px-4 font-medium text-gray-900 hidden md:table-cell">
+    <motion.tr
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: isPending ? 0.5 : 1, y: 0 }}
+      transition={{ duration: 0.35, delay: index * 0.035, ease: [0.16, 1, 0.3, 1] }}
+    >
+      <td className="hidden font-mono text-xs font-semibold text-navy-700 md:table-cell">
         {sale.invoice_code}
       </td>
-      <td className="py-3 px-4">{sale.customer?.name}</td>
-      <td className="py-3 px-4 hidden md:table-cell">
+      <td className="font-medium">
+        {sale.customer?.name ?? (
+          <span className="text-muted">Walk-in</span>
+        )}
+      </td>
+      <td className="hidden text-muted md:table-cell">
         {isEditing ? (
-          <input
-            type="date"
+          <DatePicker
+            variant="compact"
+            aria-label="Sale date"
             value={editData.sale_date}
-            onChange={(e) =>
-              setEditData({ ...editData, sale_date: e.target.value })
-            }
-            className="border rounded p-1 w-full text-sm"
+            onChange={(sale_date) => setEditData({ ...editData, sale_date })}
             disabled={isPending}
           />
         ) : (
-          new Date(sale.sale_date).toLocaleDateString("id-ID")
+          formatDate(sale.sale_date)
         )}
       </td>
 
-      <td className="py-3 px-4">
+      <td>
         <button
           onClick={onViewItems}
-          className="text-blue-600 hover:underline cursor-pointer font-medium"
+          className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-navy-50 px-2.5 py-1 text-xs font-semibold text-navy-700 transition-colors hover:bg-navy-100"
         >
-          {sale.items.length} Item(s)
+          <Package className="size-3.5" />
+          {itemCount} {itemCount === 1 ? "item" : "items"}
         </button>
       </td>
 
-      <td className="py-3 px-4 ">{formatCurrency(sale.total_amount)}</td>
+      <td className="text-right font-semibold tabular-nums">
+        {formatCurrency(sale.total_amount)}
+      </td>
 
-      <td className="py-3 px-4 hidden lg:table-cell">
+      <td className="hidden text-muted lg:table-cell">
         {isEditing ? (
           <select
             value={editData.payment_method}
             onChange={(e) =>
               setEditData({ ...editData, payment_method: e.target.value })
             }
-            className="border rounded p-1 w-full text-sm bg-white"
+            className="field h-8 cursor-pointer py-1 text-xs"
             disabled={isPending}
           >
-            <option value="Cash">Cash</option>
-            <option value="Transfer">Transfer</option>
-            <option value="QRIS">QRIS</option>
+            {PAYMENT_METHODS.map((method) => (
+              <option key={method.value} value={method.value}>
+                {method.label}
+              </option>
+            ))}
           </select>
         ) : (
           sale.payment_method
         )}
       </td>
 
-      <td className="py-3 px-4 font-medium">
+      <td>
         {isEditing ? (
           <select
             value={editData.payment_status}
             onChange={(e) =>
               setEditData({ ...editData, payment_status: e.target.value })
             }
-            className="border rounded p-1 w-full text-sm bg-white"
+            className="field h-8 cursor-pointer py-1 text-xs"
             disabled={isPending}
           >
-            <option value="Paid">Paid</option>
-            <option value="Debt">Debt</option>
+            {PAYMENT_STATUSES.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
           </select>
         ) : (
-          <span className={getStatusColor(sale.payment_status || "Paid")}>
-            {sale.payment_status || "Paid"}
-          </span>
+          <PaymentBadge status={status} />
         )}
       </td>
 
-      <td className="py-2 px-4">
-        {isEditing ? (
-          <div className="flex gap-2">
-            <Button
-              variant="primary"
-              onClick={handleSave}
-              disabled={isPending}
-              className="text-xs p-1"
-            >
-              <SaveIcon className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => setIsEditing(false)}
-              disabled={isPending}
-              className="text-xs p-1"
-            >
-              <CloseIcon className="w-4 h-4 text-red-500" />
-            </Button>
-          </div>
-        ) : (
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              onClick={() => setIsEditing(true)}
-              className={`flex items-center gap-1 text-xs ${
-                isPaid ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-              disabled={isPaid}
-              title={isPaid ? "Cannot edit paid transaction" : "Edit"}
-            >
-              <EditIcon className="w-4 h-4 text-gray-900" />
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={handleDelete}
-              disabled={isPaid}
-              className={`flex items-center gap-1 text-xs text-red-500 ${
-                isPaid ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-              title={isPaid ? "Cannot delete paid transaction" : "Delete"}
-            >
-              <DeleteIcon className="w-4 h-4 text-red-500" />
-            </Button>
-          </div>
-        )}
+      <td>
+        <div className="flex justify-end gap-1">
+          {isEditing ? (
+            <>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={isPending}
+                aria-label="Save"
+                className={`${iconBtn} bg-navy-700 text-white hover:bg-navy-600`}
+              >
+                <Check className="size-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                disabled={isPending}
+                aria-label="Cancel"
+                className={`${iconBtn} hover:bg-navy-50 hover:text-ink`}
+              >
+                <X className="size-4" />
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                disabled={isPaid}
+                aria-label="Edit"
+                title={isPaid ? "Paid invoices can't be edited" : "Edit"}
+                className={`${iconBtn} hover:bg-navy-50 hover:text-navy-700`}
+              >
+                <Pencil className="size-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isPaid || isPending}
+                aria-label="Delete"
+                title={isPaid ? "Paid invoices can't be deleted" : "Delete"}
+                className={`${iconBtn} hover:bg-rose-50 hover:text-rose-600`}
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            </>
+          )}
+        </div>
       </td>
-    </tr>
+    </motion.tr>
   );
 }

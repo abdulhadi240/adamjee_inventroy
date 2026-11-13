@@ -1,7 +1,9 @@
 "use client";
+
+import { useState } from "react";
 import CustomerTable from "@/components/features/customers/CustomerTable";
 import AddCustomer from "@/components/features/customers/AddCustomer";
-import { useState } from "react";
+import { AnimatedCard, CardHeader, PageHeader } from "@/components/ui/motion";
 
 export default function CustomersPage() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -11,21 +13,25 @@ export default function CustomersPage() {
   };
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="bg-white shadow-md p-4 rounded-md">
-        <div className="flex flex-row justify-between items-center gap-3">
-          <h1 className="text-lg pb-2 tracking-wide">Customers</h1>
-          <div className="flex flex-row gap-4 tracking-wide">
-            <AddCustomer onOrderChange={triggerRefresh} />
-          </div>
-        </div>
-        <div className="pt-2">
-          <CustomerTable
-            refreshKey={refreshKey}
-            onOrderChange={triggerRefresh}
+    <div className="flex flex-col gap-4">
+      <PageHeader
+        title="Customers"
+        description="People and businesses you sell to."
+        actions={<AddCustomer onOrderChange={triggerRefresh} />}
+      />
+      <AnimatedCard flush className="overflow-hidden">
+        <div className="p-5 pb-4">
+          <CardHeader
+            title="Customer directory"
+            subtitle="Click a phone number to copy it"
+            className="mb-0"
           />
         </div>
-      </div>
+        <CustomerTable
+          refreshKey={refreshKey}
+          onOrderChange={triggerRefresh}
+        />
+      </AnimatedCard>
     </div>
   );
 }

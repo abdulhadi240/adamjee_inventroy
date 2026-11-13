@@ -3,7 +3,7 @@
 import { createClientServer } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { sanitizePhoneNumber } from "@/lib/utils/formatters";
-import { FormState } from "@/lib/types";
+import { FormState, SupplierOption } from "@/lib/types";
 
 export async function getAllSuppliers() {
   const supabase = await createClientServer();
@@ -22,9 +22,9 @@ export async function getAllSuppliers() {
 }
 
 export async function insertSupplier(
-  previousState: FormState,
+  previousState: FormState<SupplierOption>,
   formData: FormData
-): Promise<FormState> {
+): Promise<FormState<SupplierOption>> {
   const supabase = await createClientServer();
 
   const {
@@ -55,13 +55,17 @@ export async function insertSupplier(
     return { success: false, message: "Invalid contact number format." };
   }
 
-  const { error } = await supabase.from("suppliers").insert({
-    supplier_name: supplier_name,
-    address: address,
-    contact_number: contact_number,
-    purchase_link: purchase_link,
-    user_id: user.id,
-  });
+  const { data, error } = await supabase
+    .from("suppliers")
+    .insert({
+      supplier_name: supplier_name,
+      address: address,
+      contact_number: contact_number,
+      purchase_link: purchase_link,
+      user_id: user.id,
+    })
+    .select("id, supplier_name, contact_number")
+    .single();
 
   if (error) {
     console.error("Failed to insert supplier:", error.message);
@@ -72,7 +76,11 @@ export async function insertSupplier(
   }
 
   revalidatePath("/suppliers");
-  return { success: true, message: "Supplier added successfully!" };
+  return {
+    success: true,
+    message: "Supplier added successfully!",
+    data: { ...data, id: String(data.id) },
+  };
 }
 
 export async function updateSupplier(

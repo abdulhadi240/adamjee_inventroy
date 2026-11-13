@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { HamburgerIcon } from "@/components/icons";
+import { Menu } from "lucide-react";
 import GlobalSearch from "@/components/ui/GlobalSearch";
 import UserDropdown from "@/components/features/topbar/UserDropdown";
 import NotificationDropdown from "@/components/features/topbar/NotificationDropdown";
-import { User } from "@/lib/types";
+import Logo from "@/components/brand/Logo";
+import { User, StockAlert } from "@/lib/types";
 import { getProfile } from "@/lib/actions/profile";
 import { getLowStockNotifications } from "@/lib/actions/notifications";
-import { StockAlert } from "@/lib/types";
 
 interface TopbarProps {
   onMenuClick: () => void;
@@ -40,34 +40,39 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
   }, []);
 
   return (
-    <div className="flex flex-row justify-between items-center gap-2 px-4 py-4 md:pr-6 bg-white shadow-md relative z-20">
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-line/80 bg-canvas/75 px-4 backdrop-blur-xl md:px-7">
       <button
         onClick={onMenuClick}
-        className="md:hidden p-2 -ml-2"
+        className="grid size-9 cursor-pointer place-items-center rounded-xl text-ink transition hover:bg-white md:hidden"
         aria-label="Open menu"
       >
-        <HamburgerIcon className="w-6 h-6" />
+        <Menu className="size-5" />
       </button>
+      <div className="md:hidden">
+        <Logo compact />
+      </div>
 
-      <div className="relative flex-1 md:w-1/2 max-w-2xl">
+      <div className="max-w-xl flex-1">
         <GlobalSearch />
       </div>
 
-      <div className="flex items-center gap-3 md:gap-6">
+      <div className="ml-auto flex items-center gap-2">
         {loading ? (
-          <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />
+          <>
+            <div className="skeleton size-9 rounded-full" />
+            <div className="skeleton h-9 w-9 rounded-full md:w-36" />
+          </>
         ) : (
-          <NotificationDropdown alerts={alerts} />
-        )}
-
-        {loading ? (
-          <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse border border-gray-300" />
-        ) : user ? (
-          <UserDropdown user={user} />
-        ) : (
-          <div className="w-10 h-10 rounded-full bg-gray-200" />
+          <>
+            <NotificationDropdown alerts={alerts} />
+            {user ? (
+              <UserDropdown user={user} />
+            ) : (
+              <div className="size-9 rounded-full bg-line" />
+            )}
+          </>
         )}
       </div>
-    </div>
+    </header>
   );
 }

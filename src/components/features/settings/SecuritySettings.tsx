@@ -1,10 +1,12 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
+import { ShieldCheck } from "lucide-react";
 import { updatePasswordSettings } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/Button";
-import { FormState } from "@/lib/types";
 import PasswordInput from "@/components/ui/PasswordInput";
+import { FormAlert, PendingLabel } from "@/components/features/auth/FormAlert";
+import { FormState } from "@/lib/types";
 
 const initialState: FormState = { success: false, message: "" };
 
@@ -22,34 +24,42 @@ export function SecuritySettings() {
   }, [state?.success]);
 
   return (
-    <form
-      ref={formRef}
-      action={formAction}
-      className="flex flex-col gap-5 animate-in fade-in duration-300"
-    >
-      <div className="p-4 bg-yellow-50 text-yellow-800 text-sm rounded-md mb-2 border border-yellow-200">
-        Secure your account by using a strong password.
+    <form ref={formRef} action={formAction} className="flex flex-col gap-5">
+      <div className="flex items-start gap-3 rounded-xl bg-navy-50 p-3.5 ring-1 ring-navy-100">
+        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-white text-navy-600 shadow-card">
+          <ShieldCheck className="size-4" />
+        </span>
+        <div>
+          <p className="text-sm font-semibold text-ink">Keep your account secure</p>
+          <p className="text-xs text-muted">
+            Use at least 8 characters with a mix of letters, numbers and symbols.
+          </p>
+        </div>
       </div>
 
-      {!state?.success && state?.message && (
-        <div className="p-3 bg-red-50 text-red-600 text-sm rounded-md border border-red-200">
-          {state.message}
-        </div>
-      )}
+      <PasswordInput
+        label="Current password"
+        name="current_password"
+        placeholder="Enter your current password"
+      />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <PasswordInput
+          label="New password"
+          name="new_password"
+          placeholder="New password"
+        />
+        <PasswordInput
+          label="Confirm new password"
+          name="confirm_password"
+          placeholder="Repeat new password"
+        />
+      </div>
 
-      {state?.success && state?.message && (
-        <div className="p-3 bg-green-50 text-green-600 text-sm rounded-md border border-green-200">
-          {state.message}
-        </div>
-      )}
+      <FormAlert tone={state?.success ? "success" : "error"} message={state?.message} />
 
-      <PasswordInput label="Current Password" name="current_password" placeholder="Enter your current password" />
-      <PasswordInput label="New Password" name="new_password" placeholder="Enter your new password" />
-      <PasswordInput label="Confirm Password" name="confirm_password" placeholder="Enter your confirm password" />
-
-      <div className="flex justify-end pt-4">
+      <div className="flex justify-end border-t border-line pt-5">
         <Button type="submit" disabled={isPending}>
-          {isPending ? "Updating..." : "Update Password"}
+          <PendingLabel pending={isPending} busy="Updating…" idle="Update password" />
         </Button>
       </div>
     </form>

@@ -31,7 +31,7 @@ export default async function SettingsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-3 mx-3 md:mx-0 md:mr-3">
+    <div>
       <SettingsClientWrapper user={userData} />
     </div>
   );

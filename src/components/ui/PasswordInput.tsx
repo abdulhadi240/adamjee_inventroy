@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { EyeIcon, EyeSlashIcon } from "@/components/icons";
+import { AnimatePresence, motion } from "motion/react";
+import { Eye, EyeOff, Lock } from "lucide-react";
 
 interface PasswordInputProps {
   name: string;
@@ -19,34 +20,43 @@ export default function PasswordInput({
   const [showPassword, setShowPassword] = useState(false);
 
   return (
-    <div className="flex flex-col">
-      <label htmlFor={name} className="text-gray-800 font-semibold">
+    <div>
+      <label htmlFor={name} className="field-label">
         {label}
       </label>
       <div className="relative">
+        <Lock className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted" />
         <input
           id={name}
           name={name}
           type={showPassword ? "text" : "password"}
           placeholder={placeholder}
-          className="border border-gray-600 outline-none rounded-md p-2 focus:ring-1 focus:ring-gray-600 w-full"
+          className="field pl-10 pr-11"
         />
         <button
           type="button"
           onClick={() => setShowPassword((p) => !p)}
           aria-label={showPassword ? "Hide password" : "Show password"}
-          className="absolute inset-y-0 right-2 flex items-center text-gray-500 hover:text-gray-700"
+          className="absolute right-2 top-1/2 grid size-8 -translate-y-1/2 cursor-pointer place-items-center rounded-lg text-muted transition-colors hover:bg-navy-50 hover:text-navy-700"
         >
-          {showPassword ? (
-            <EyeSlashIcon className="opacity-70 hover:opacity-100 transition-opacity w-8 h-8" />
-          ) : (
-            <EyeIcon className="opacity-70 hover:opacity-100 transition-opacity w-8 h-8" />
-          )}
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.span
+              key={showPassword ? "hide" : "show"}
+              initial={{ opacity: 0, rotate: -45, scale: 0.6 }}
+              animate={{ opacity: 1, rotate: 0, scale: 1 }}
+              exit={{ opacity: 0, rotate: 45, scale: 0.6 }}
+              transition={{ duration: 0.15 }}
+            >
+              {showPassword ? (
+                <EyeOff className="size-4" />
+              ) : (
+                <Eye className="size-4" />
+              )}
+            </motion.span>
+          </AnimatePresence>
         </button>
       </div>
-      {hint && (
-        <p className="text-gray-600 text-xs sm:text-base mt-1">{hint}</p>
-      )}
+      {hint && <p className="mt-1.5 text-xs text-muted">{hint}</p>}
     </div>
   );
 }

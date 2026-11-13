@@ -8,13 +8,21 @@ import {
   useMemo,
   useCallback,
 } from "react";
+import { AnimatePresence, motion } from "motion/react";
+import { Lock, Package, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import { insertOrder } from "@/lib/actions/orders";
 import { Button } from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import LabeledInput from "@/components/ui/LabeledInput";
 import LabeledSelect from "@/components/ui/LabeledSelect";
 import SearchableSelect from "@/components/ui/SearchableSelect";
-import { formatDisplayPhoneNumber } from "@/lib/utils/formatters";
+import { SupplierFormModal } from "@/components/features/suppliers/AddSupplier";
+import { ProductFormModal } from "@/components/features/inventory/AddProduct";
+import { useQuickCreate } from "@/lib/hooks/use-quick-create";
+import {
+  formatCurrency,
+  formatDisplayPhoneNumber,
+} from "@/lib/utils/formatters";
 import {
   FormState,
   SupplierOption,
@@ -23,6 +31,7 @@ import {
   OrderItemState,
 } from "@/lib/types";
 import { ORDER_STATUSES } from "@/lib/constants";
+import DatePicker from "@/components/ui/DatePicker";
 
 const initialState: FormState = { success: false, message: "" };
 const initialItemState: OrderItemState = {
@@ -58,9 +67,16 @@ export default function AddOrder({
   );
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState("");
   const [orderStatus, setOrderStatus] = useState("");
+  const [itemError, setItemError] = useState<string | null>(null);
   const processedStateRef = useRef(initialState);
   const [itemFormKey, setItemFormKey] = useState(0);
-  const supplierOptions = suppliers.map((s) => ({
+
+  // "Add new …" shortcuts in the pickers
+  const supplierQuick = useQuickCreate(suppliers);
+  const productQuick = useQuickCreate(products);
+  const allProducts = productQuick.items;
+
+  const supplierOptions = supplierQuick.items.map((s) => ({
     id: s.id,
     main_text: s.supplier_name,
     secondary_text: String(formatDisplayPhoneNumber(s.contact_number)),
@@ -68,15 +84,19 @@ export default function AddOrder({
 
   const productOptions = useMemo(() => {
     if (!selectedSupplierId) return [];
-    console.log(selectedSupplierId);
-    return products
+    return allProducts
       .filter((p) => String(p.supplier_id) === String(selectedSupplierId))
       .map((p) => ({
         id: p.id,
         main_text: p.product_name,
         secondary_text: p.product_type,
       }));
-  }, [products, selectedSupplierId]);
+  }, [allProducts, selectedSupplierId]);
+
+  const total = items.reduce(
+    (sum, item) => sum + item.quantity * item.cost_per_item,
+    0
+  );
 
   const isHeaderLocked = items.length > 0;
   const isItemFormDisabled =
@@ -89,25 +109,29 @@ export default function AddOrder({
     setSelectedSupplierId(null);
     setExpectedDeliveryDate("");
     setOrderStatus("");
+    setItemError(null);
     setShowForm(false);
     setItemFormKey((prevKey) => prevKey + 1);
   }, []);
+
   useEffect(() => {
     if (state !== processedStateRef.current && state.message) {
-      alert(state.message);
       processedStateRef.current = state;
       if (state.success) {
         handleDiscard();
         onOrderChange();
+      } else {
+        alert(state.message);
       }
     }
   }, [state, onOrderChange, handleDiscard]);
 
   const handleProductSelect = (productId: string | null) => {
     if (!productId) return;
-    const product = products.find((p) => p.id === productId);
+    const product = allProducts.find((p) => String(p.id) === String(productId));
 
     if (product) {
+      setItemError(null);
       setCurrentItem({
         product_id: product.id,
         product_name: product.product_name,
@@ -123,14 +147,15 @@ export default function AddOrder({
     const costNum = parseFloat(currentItem.cost_per_item);
 
     if (!currentItem.product_id || isNaN(quantityNum) || quantityNum <= 0) {
-      alert("Please select a product and enter a valid quantity.");
+      setItemError("Select a product and enter a valid quantity.");
       return;
     }
     if (isNaN(costNum) || costNum < 0) {
-      alert("Please enter a valid cost per item.");
+      setItemError("Enter a valid cost per item.");
       return;
     }
 
+    setItemError(null);
     setItems([
       ...items,
       {
@@ -141,7 +166,6 @@ export default function AddOrder({
       },
     ]);
     setCurrentItem(initialItemState);
-
     setItemFormKey((prevKey) => prevKey + 1);
   };
 
@@ -151,16 +175,16 @@ export default function AddOrder({
 
   return (
     <>
-      <Button
-        onClick={() => setShowForm(true)}
-        className="flex items-center text-xs sm:text-base"
-      >
-        Add Order
+      <Button onClick={() => setShowForm(true)}>
+        <Plus className="size-4" />
+        New order
       </Button>
       <Modal
         isOpen={showForm}
         onClose={handleDiscard}
-        title="New Purchase Order"
+        size="lg"
+        title="New purchase order"
+        description="Pick a supplier, then add the products you're restocking."
         footer={
           <>
             <Button type="button" variant="secondary" onClick={handleDiscard}>
@@ -172,10 +196,10 @@ export default function AddOrder({
               disabled={isPending || items.length === 0}
             >
               {isPending
-                ? "Saving..."
+                ? "Saving…"
                 : items.length === 0
                 ? "Add items to save"
-                : "Save Order"}
+                : `Save order · ${formatCurrency(total)}`}
             </Button>
           </>
         }
@@ -187,66 +211,82 @@ export default function AddOrder({
           className="flex flex-col gap-5"
         >
           <input type="hidden" name="items" value={JSON.stringify(items)} />
-          <SearchableSelect
-            label="Supplier"
-            name="supplier_id"
-            options={supplierOptions}
-            onSelect={setSelectedSupplierId}
-            value={selectedSupplierId}
-            disabled={isHeaderLocked}
-            placeholder="Search Supplier..."
-            required
-          />
-          <LabeledInput
-            label="Expected Delivery"
-            id="expected_delivery_date"
-            name="expected_delivery_date"
-            type="date"
-            value={expectedDeliveryDate}
-            readOnly={isHeaderLocked}
-            onChange={(e) => setExpectedDeliveryDate(e.target.value)}
-            className={
-              isHeaderLocked
-                ? "bg-gray-100 text-gray-500 cursor-not-allowed"
-                : ""
-            }
-            required
-          />
-          <LabeledSelect
-            label="Order Status"
-            id="status"
-            name="status"
-            value={orderStatus}
-            onChange={(e) => setOrderStatus(e.target.value)}
-            className={
-              isHeaderLocked
-                ? "bg-gray-100 text-gray-500 cursor-not-allowed pointer-events-none"
-                : ""
-            }
-            required
-          >
-            <option value="" disabled>
-              Select order status
-            </option>
-            {ORDER_STATUSES.map((status) => (
-              <option key={status.value} value={status.value}>
-                {status.label}
-              </option>
-            ))}
-          </LabeledSelect>
-          {isHeaderLocked && (
-            <p className="text-xs text-center text-gray-500 -mt-2">
-              (Remove all items to change supplier or status)
-            </p>
-          )}
-          <div className="border-t pt-4">
-            <h3 className="font-semibold text-lg mb-2">Order Items</h3>
-            <div
-              className={`
-                flex flex-col gap-2 p-2 border rounded-md bg-gray-50
-                ${isItemFormDisabled ? "opacity-50 cursor-not-allowed" : ""}
-              `}
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="sm:col-span-3">
+              <SearchableSelect
+                label="Supplier"
+                name="supplier_id"
+                options={supplierOptions}
+                onSelect={setSelectedSupplierId}
+                value={selectedSupplierId}
+                disabled={isHeaderLocked}
+                placeholder="Search suppliers…"
+                emptyText="No suppliers found."
+                createLabel="supplier"
+                onCreateNew={supplierQuick.open}
+                required
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <DatePicker
+                label="Expected delivery"
+                name="expected_delivery_date"
+                value={expectedDeliveryDate}
+                onChange={setExpectedDeliveryDate}
+                disabled={isHeaderLocked}
+                placeholder="Pick a delivery date"
+                required
+              />
+            </div>
+            <LabeledSelect
+              label="Status"
+              id="status"
+              name="status"
+              value={orderStatus}
+              onChange={(e) => setOrderStatus(e.target.value)}
+              className={
+                isHeaderLocked
+                  ? "pointer-events-none cursor-not-allowed bg-canvas text-muted"
+                  : ""
+              }
+              required
             >
+              <option value="" disabled>
+                Select status
+              </option>
+              {ORDER_STATUSES.map((status) => (
+                <option key={status.value} value={status.value}>
+                  {status.label}
+                </option>
+              ))}
+            </LabeledSelect>
+          </div>
+
+          <AnimatePresence>
+            {isHeaderLocked && (
+              <motion.p
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="-mt-2 flex items-center gap-1.5 text-xs text-muted"
+              >
+                <Lock className="size-3" />
+                Remove all items to change supplier, date or status.
+              </motion.p>
+            )}
+          </AnimatePresence>
+
+          {/* Line-item builder */}
+          <div
+            className={`rounded-2xl border border-line bg-canvas/60 p-4 transition-opacity duration-300 ${
+              isItemFormDisabled ? "opacity-55" : ""
+            }`}
+          >
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
+              Add item
+            </p>
+            <div className="grid items-end gap-3 sm:grid-cols-[1fr_90px_130px_auto]">
               <SearchableSelect
                 label="Product"
                 name="product_id"
@@ -255,22 +295,23 @@ export default function AddOrder({
                 disabled={isItemFormDisabled}
                 placeholder={
                   !selectedSupplierId
-                    ? "Select a supplier first..."
-                    : "Search Product..."
+                    ? "Select a supplier first…"
+                    : "Search products…"
                 }
-                required
+                emptyText="This supplier has no products yet."
+                value={currentItem.product_id || null}
+                createLabel="product"
+                onCreateNew={productQuick.open}
                 key={itemFormKey}
               />
               <LabeledInput
-                label="Quantity"
+                label="Qty"
                 id="temp_qty"
                 type="number"
+                min={1}
                 value={currentItem.quantity}
                 onChange={(e) =>
-                  setCurrentItem({
-                    ...currentItem,
-                    quantity: e.target.value,
-                  })
+                  setCurrentItem({ ...currentItem, quantity: e.target.value })
                 }
                 disabled={isItemFormDisabled}
               />
@@ -278,6 +319,7 @@ export default function AddOrder({
                 label="Cost / item"
                 id="temp_cost"
                 type="number"
+                min={0}
                 value={currentItem.cost_per_item}
                 onChange={(e) =>
                   setCurrentItem({
@@ -292,35 +334,128 @@ export default function AddOrder({
                 variant="secondary"
                 onClick={handleAddItem}
                 disabled={isItemFormDisabled}
+                className="h-[42px]"
               >
-                Add Item to Order
+                <Plus className="size-4" />
+                Add
               </Button>
             </div>
-            <ul className="mt-4 space-y-2">
-              {items.map((item, index) => (
-                <li
-                  key={index}
-                  className="flex justify-between items-center p-2 border rounded-md"
+            {itemError && (
+              <p className="mt-2 text-xs text-rose-600">{itemError}</p>
+            )}
+          </div>
+
+          {/* Items list */}
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted">
+                Order items
+              </p>
+              <span className="text-xs text-muted">
+                {items.length} {items.length === 1 ? "line" : "lines"}
+              </span>
+            </div>
+
+            {items.length === 0 ? (
+              <div className="flex flex-col items-center rounded-2xl border border-dashed border-line py-6 text-center">
+                <ShoppingCart className="mb-1.5 size-5 text-navy-200" />
+                <p className="text-xs text-muted">No items added yet.</p>
+              </div>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                <AnimatePresence initial={false}>
+                  {items.map((item, index) => (
+                    <motion.li
+                      key={`${item.product_id}-${index}`}
+                      layout
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, x: 24, transition: { duration: 0.18 } }}
+                      className="flex items-center gap-3 rounded-xl border border-line bg-white p-3"
+                    >
+                      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-navy-50 text-navy-600">
+                        <Package className="size-4" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-ink">
+                          {item.product_name}
+                        </p>
+                        <p className="text-xs tabular-nums text-muted">
+                          {item.quantity} × {formatCurrency(item.cost_per_item)}
+                        </p>
+                      </div>
+                      <p className="text-sm font-semibold tabular-nums text-ink">
+                        {formatCurrency(item.quantity * item.cost_per_item)}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveItem(index)}
+                        aria-label={`Remove ${item.product_name}`}
+                        className="grid size-8 cursor-pointer place-items-center rounded-full text-muted transition-colors hover:bg-rose-50 hover:text-rose-600"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </motion.li>
+                  ))}
+                </AnimatePresence>
+              </ul>
+            )}
+
+            <AnimatePresence>
+              {items.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="mt-3 flex items-center justify-between rounded-xl bg-navy-800 px-4 py-3 text-white"
                 >
-                  <div>
-                    <p className="font-medium">{item.product_name}</p>
-                    <p className="text-sm text-gray-500">
-                      {item.quantity} units @ {item.cost_per_item}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveItem(index)}
-                    className="text-red-500 hover:text-red-700"
+                  <span className="text-sm text-navy-100">Order total</span>
+                  <motion.span
+                    key={total}
+                    initial={{ opacity: 0.4, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-base font-semibold tabular-nums"
                   >
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
+                    {formatCurrency(total)}
+                  </motion.span>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </form>
       </Modal>
+
+      {/* Quick-add popups, outside the order <form> so forms never nest */}
+      <SupplierFormModal
+        isOpen={supplierQuick.isOpen}
+        onClose={supplierQuick.close}
+        defaultName={supplierQuick.draft}
+        onCreated={(supplier) => {
+          supplierQuick.add(supplier);
+          setSelectedSupplierId(String(supplier.id));
+        }}
+      />
+      <ProductFormModal
+        isOpen={productQuick.isOpen}
+        onClose={productQuick.close}
+        suppliers={supplierQuick.items}
+        defaultName={productQuick.draft}
+        defaultSupplierId={selectedSupplierId}
+        onCreated={(product) => {
+          productQuick.add(product);
+          // Only auto-pick it if it belongs to this order's supplier
+          if (String(product.supplier_id) === String(selectedSupplierId)) {
+            setItemError(null);
+            setCurrentItem({
+              product_id: String(product.id),
+              product_name: product.product_name,
+              product_type: product.product_type,
+              quantity: "1",
+              cost_per_item: String(product.buy_price || 0),
+            });
+          }
+        }}
+      />
     </>
   );
 }

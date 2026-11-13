@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { Truck } from "lucide-react";
 import { getPaginatedSuppliersByUser } from "@/lib/actions/suppliers";
 import Pagination, { PAGE_SIZE } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/hooks/use-pagination";
 import SupplierRow from "@/components/features/suppliers/SupplierRow";
+import { EmptyState } from "@/components/ui/motion";
 import { Supplier } from "@/lib/types";
 
 interface SupplierTableProps {
@@ -18,6 +20,7 @@ export default function SupplierTable({
   onOrderChange,
 }: SupplierTableProps) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
   const { currentPage, handlePageChange } = usePagination();
 
@@ -36,50 +39,59 @@ export default function SupplierTable({
         setTotalPages(Math.ceil(res.total / PAGE_SIZE));
       } catch (err) {
         console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
   }, [currentPage, refreshKey, searchQuery]);
 
   return (
-    <div className="pt-2 overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white text-left">
-          <thead className="text-sm sm:text-base">
+    <>
+      <div className="overflow-x-auto px-2">
+        <table className="data-table">
+          <thead>
             <tr>
-              <th className="py-2 px-4">Supplier Name</th>
-              <th className="py-2 px-4">Address</th>
-              <th className="py-2 px-4">Contact Number</th>
-              <th className="py-2 px-4">Purchase Link</th>
-              <th className="py-2 px-4">Action</th>
+              <th>Supplier</th>
+              <th className="hidden md:table-cell">Address</th>
+              <th>Contact</th>
+              <th className="text-center">Store</th>
+              <th className="text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="text-sm sm:text-base border-t border-gray-300">
-            {suppliers.map((supplier) => (
+          <tbody>
+            {loading &&
+              suppliers.length === 0 &&
+              [0, 1, 2].map((i) => (
+                <tr key={`sk-${i}`}>
+                  <td colSpan={5}>
+                    <div className="skeleton h-6" />
+                  </td>
+                </tr>
+              ))}
+            {suppliers.map((supplier, index) => (
               <SupplierRow
                 key={supplier.id}
+                index={index}
                 onOrderChange={onOrderChange}
                 supplier={supplier}
               />
             ))}
-            {suppliers.length === 0 && (
-              <tr>
-                <td
-                  colSpan={4}
-                  className="py-8 text-center text-gray-500 italic"
-                >
-                  No suppliers found.
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-        />
+        {!loading && suppliers.length === 0 && (
+          <EmptyState
+            icon={Truck}
+            title="No suppliers yet"
+            description="Add the vendors you buy stock from so you can raise purchase orders."
+          />
+        )}
       </div>
-    </div>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
+    </>
   );
 }

@@ -1,24 +1,24 @@
 /**
- * Formats a number or string into Indonesian Rupiah currency format.
- * Returns "Rp 0" if the input is invalid or NaN.
+ * Formats a number or string into Pakistani Rupee (PKR) currency format.
+ * Returns "Rs 0" if the input is invalid or NaN.
  *
  * @param amount - The value to format (number or string).
- * @returns The formatted currency string (e.g., "Rp 150.000").
+ * @returns The formatted currency string (e.g., "Rs 150,000").
  *
  * @example
- * formatCurrency(150000); // "Rp 150.000"
+ * formatCurrency(150000); // "Rs 150,000"
  */
 export function formatCurrency(amount: number | string): string {
   const numericAmount =
     typeof amount === "string" ? parseFloat(amount) : amount;
 
   if (isNaN(numericAmount)) {
-    return "Rp 0";
+    return "Rs 0";
   }
 
-  const formatter = new Intl.NumberFormat("id-ID", {
+  const formatter = new Intl.NumberFormat("en-PK", {
     style: "currency",
-    currency: "IDR",
+    currency: "PKR",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   });
@@ -27,23 +27,23 @@ export function formatCurrency(amount: number | string): string {
 }
 
 /**
- * Formats a large number into a compact Indonesian Rupiah string.
+ * Formats a large number into a compact Pakistani Rupee string.
  * Useful for dashboards or charts where space is limited.
  *
  * @param amount - The value to format.
- * @returns The compact currency string (e.g., "Rp 1,5 jt" or similar depending on locale implementation).
+ * @returns The compact currency string (e.g., "Rs 1.5M").
  */
 export function formatCurrencyShort(amount: number | string): string {
   const numericAmount =
     typeof amount === "string" ? parseFloat(amount) : amount;
 
   if (isNaN(numericAmount)) {
-    return "Rp 0";
+    return "Rs 0";
   }
 
-  const formatter = new Intl.NumberFormat("id-ID", {
+  const formatter = new Intl.NumberFormat("en-PK", {
     style: "currency",
-    currency: "IDR",
+    currency: "PKR",
     notation: "compact",
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -54,30 +54,38 @@ export function formatCurrencyShort(amount: number | string): string {
 
 /**
  * Sanitizes a phone number string for database storage.
- * Removes symbols and standardizes the prefix to '62' (Indonesia).
+ * Removes symbols and standardizes the prefix to '92' (Pakistan).
  *
  * @param phone - The raw phone number string.
  * @returns The sanitized number string (only digits).
  *
  * @example
- * sanitizePhoneNumber("0812-3456"); // "628123456"
- * sanitizePhoneNumber("+62 812");   // "62812"
+ * sanitizePhoneNumber("0300-1234567");   // "923001234567"
+ * sanitizePhoneNumber("+92 300 1234567"); // "923001234567"
+ * sanitizePhoneNumber("3001234567");     // "923001234567"
  */
 export function sanitizePhoneNumber(phone: string): string {
   if (!phone) return "";
 
-  const cleaned = phone.replace(/[()\s-]/g, "");
+  const cleaned = phone.replace(/\D/g, "");
 
-  if (cleaned.startsWith("+")) {
-    return cleaned.substring(1);
+  // International dialing prefix: 0092... -> 92...
+  if (cleaned.startsWith("00")) {
+    return cleaned.substring(2);
   }
 
-  if (cleaned.startsWith("08")) {
-    return "62" + cleaned.substring(1);
+  if (cleaned.startsWith("92")) {
+    return cleaned;
   }
 
-  if (cleaned.startsWith("8") && cleaned.length > 8) {
-    return "62" + cleaned;
+  // Local format: 0300..., 042... -> 92300..., 9242...
+  if (cleaned.startsWith("0")) {
+    return "92" + cleaned.substring(1);
+  }
+
+  // Mobile number typed without the leading 0: 3001234567
+  if (cleaned.startsWith("3") && cleaned.length === 10) {
+    return "92" + cleaned;
   }
 
   return cleaned;
@@ -85,21 +93,29 @@ export function sanitizePhoneNumber(phone: string): string {
 
 /**
  * Formats a stored phone number for UI display with international prefixes.
- * Handles specific formatting for Indonesia (+62) and US (+1).
+ * Handles specific formatting for Pakistan (+92) and US (+1).
  *
  * @param phone - The raw phone number from the database.
  * @returns The formatted display string.
  *
  * @example
- * formatDisplayPhoneNumber("628123456"); // "+62 8123456"
+ * formatDisplayPhoneNumber("923001234567"); // "+92 300 1234567"
+ * formatDisplayPhoneNumber("924235761234"); // "+92 4235761234"
  */
 export function formatDisplayPhoneNumber(
   phone: string | number | null
 ): string {
   const phoneStr = String(phone || "");
 
-  if (phoneStr.startsWith("62")) {
-    return `+62 ${phoneStr.substring(2)}`;
+  if (!phoneStr) return "-";
+
+  if (phoneStr.startsWith("92")) {
+    const local = phoneStr.substring(2);
+    // Mobile numbers: 3XX XXXXXXX
+    if (local.startsWith("3") && local.length === 10) {
+      return `+92 ${local.substring(0, 3)} ${local.substring(3)}`;
+    }
+    return `+92 ${local}`;
   }
 
   if (phoneStr.startsWith("1") && phoneStr.length === 11) {
@@ -130,16 +146,16 @@ export function formatPurchaseLink(url: string | null): string {
 }
 
 /**
- * Converts an international phone number format back to the local Indonesian format.
- * Useful for populating edit forms where users expect to see "08..." instead of "628...".
+ * Converts an international phone number format back to the local Pakistani format.
+ * Useful for populating edit forms where users expect to see "03..." instead of "923...".
  *
- * @param phone - The international phone number (e.g., "62812...").
- * @returns The local phone number string (e.g., "0812...").
+ * @param phone - The international phone number (e.g., "92300...").
+ * @returns The local phone number string (e.g., "0300...").
  */
 export function formatToLocalPhone(phone: string | number | null): string {
   const phoneStr = String(phone || "");
 
-  if (phoneStr.startsWith("62")) {
+  if (phoneStr.startsWith("92")) {
     return "0" + phoneStr.substring(2);
   }
 
@@ -151,12 +167,12 @@ export function formatToLocalPhone(phone: string | number | null): string {
  * Strips non-digit characters before formatting.
  *
  * @param value - The raw input string.
- * @returns The formatted number string (e.g., "1.000").
+ * @returns The formatted number string (e.g., "1,000").
  */
 export function formatNumber(value: string): string {
   const rawValue = value.replace(/\D/g, "");
   if (rawValue === "") return "";
-  return new Intl.NumberFormat("id-ID").format(Number(rawValue));
+  return new Intl.NumberFormat("en-PK").format(Number(rawValue));
 }
 
 /**

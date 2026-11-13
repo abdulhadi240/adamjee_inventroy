@@ -27,15 +27,17 @@ export default async function InventoryPage() {
   };
 
   return (
-    <div className="flex flex-col gap-3">
-      <OverallInventory
-        totalCategories={data.totalCategories}
-        totalProducts={data.totalProducts}
-        totalInventoryValue={data.totalValue}
-        lowStockCount={data.lowStockCount}
-        noStockCount={data.noStockCount}
-      />
-      <InventoryClientWrapper suppliers={suppliers}/>
-    </div>
+    <InventoryClientWrapper
+      suppliers={suppliers}
+      overview={
+        <OverallInventory
+          totalCategories={data.totalCategories}
+          totalProducts={data.totalProducts}
+          totalInventoryValue={data.totalValue}
+          lowStockCount={data.lowStockCount}
+          noStockCount={data.noStockCount}
+        />
+      }
+    />
   );
 }

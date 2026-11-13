@@ -14,7 +14,8 @@ export async function insertSale(
   } = await supabase.auth.getUser();
   if (!user) return { success: false, message: "Not authenticated" };
 
-  const customer_id = Number(formData.get("customer_id")) || 1;
+  // No customer selected = walk-in sale (null)
+  const customer_id = Number(formData.get("customer_id")) || null;
   const payment_method = formData.get("payment_method") as string;
   const payment_status = formData.get("payment_status") as string;
   const sale_date = formData.get("sale_date") as string;

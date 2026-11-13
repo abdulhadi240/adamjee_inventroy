@@ -13,6 +13,7 @@ interface InputFieldProps {
   required?: boolean;
   disabled?: boolean;
   className?: string;
+  icon?: React.ReactNode;
 }
 
 export default function InputField({
@@ -26,23 +27,31 @@ export default function InputField({
   required = false,
   disabled = false,
   className = "",
+  icon,
 }: InputFieldProps) {
   return (
-    <div className={`flex flex-col ${className}`}>
-      <label htmlFor={id} className="text-gray-800 font-semibold mb-1">
+    <div className={className}>
+      <label htmlFor={id} className="field-label">
         {label}
       </label>
-      <input
-        id={id}
-        name={name}
-        type={type}
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-        required={required}
-        disabled={disabled}
-        className="border border-gray-600 outline-none rounded-md p-2 focus:ring-1 focus:ring-gray-600 focus:outline-none disabled:opacity-50"
-      />
+      <div className="relative">
+        {icon && (
+          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted [&_svg]:size-4">
+            {icon}
+          </span>
+        )}
+        <input
+          id={id}
+          name={name}
+          type={type}
+          placeholder={placeholder}
+          value={value}
+          onChange={onChange}
+          required={required}
+          disabled={disabled}
+          className={`field ${icon ? "pl-10" : ""}`}
+        />
+      </div>
     </div>
   );
 }

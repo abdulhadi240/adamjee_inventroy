@@ -1,4 +1,5 @@
 import * as React from "react";
+import { ChevronDown } from "lucide-react";
 
 type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement>;
 
@@ -10,22 +11,25 @@ interface LabeledSelectProps extends SelectProps {
 export default function LabeledSelect({
   label,
   id,
-  className,
+  className = "",
   children,
   ...props
 }: LabeledSelectProps) {
   return (
-    <div className="text-sm sm:text-base flex items-center justify-between gap-2">
-      <label htmlFor={id} className="text-gray-800 w-1/3 font-semibold">
+    <div>
+      <label htmlFor={id} className="field-label">
         {label}
       </label>
-      <select
-        id={id}
-        className={`border rounded-md p-2 w-2/3 bg-white cursor-pointer ${className}`}
-        {...props}
-      >
-        {children}
-      </select>
+      <div className="relative">
+        <select
+          id={id}
+          className={`field cursor-pointer appearance-none pr-9 ${className}`}
+          {...props}
+        >
+          {children}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
+      </div>
     </div>
   );
 }

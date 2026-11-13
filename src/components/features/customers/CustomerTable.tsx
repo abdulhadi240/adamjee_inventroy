@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { Users } from "lucide-react";
 import { getPaginatedCustomersByUser } from "@/lib/actions/customers";
 import Pagination, { PAGE_SIZE } from "@/components/ui/Pagination";
+import { EmptyState } from "@/components/ui/motion";
 import { usePagination } from "@/lib/hooks/use-pagination";
 import CustomerRow from "@/components/features/customers/CustomerRow";
 import { Customer } from "@/lib/types";
@@ -18,6 +20,7 @@ export default function CustomerTable({
   onOrderChange,
 }: CustomerTableProps) {
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
   const { currentPage, handlePageChange } = usePagination();
 
@@ -36,49 +39,62 @@ export default function CustomerTable({
         setTotalPages(Math.ceil(res.total / PAGE_SIZE));
       } catch (err) {
         console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
   }, [currentPage, refreshKey, searchQuery]);
 
   return (
-    <div className="pt-2 overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-white text-left">
-          <thead className="text-sm sm:text-base">
+    <>
+      <div className="overflow-x-auto border-t border-line">
+        <table className="data-table">
+          <thead>
             <tr>
-              <th className="py-2 px-4">Customer Name</th>
-              <th className="py-2 px-4">Address</th>
-              <th className="py-2 px-4">Contact Number</th>
-              <th className="py-2 px-4">Action</th>
+              <th>Customer</th>
+              <th className="hidden md:table-cell">Address</th>
+              <th>Phone</th>
+              <th className="text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="text-sm sm:text-base border-t border-gray-300">
-            {customers.map((customer) => (
+          <tbody>
+            {loading &&
+              customers.length === 0 &&
+              [0, 1, 2].map((i) => (
+                <tr key={`sk-${i}`}>
+                  <td colSpan={4}>
+                    <div className="skeleton h-6" />
+                  </td>
+                </tr>
+              ))}
+            {customers.map((customer, index) => (
               <CustomerRow
                 key={customer.id}
+                index={index}
                 onOrderChange={onOrderChange}
                 customer={customer}
               />
             ))}
-            {customers.length === 0 && (
-              <tr>
-                <td
-                  colSpan={4}
-                  className="py-8 text-center text-gray-500 italic"
-                >
-                  No customers found.
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-        />
+        {!loading && customers.length === 0 && (
+          <EmptyState
+            icon={Users}
+            title={searchQuery ? "No matching customers" : "No customers yet"}
+            description={
+              searchQuery
+                ? `Nothing matches “${searchQuery}”.`
+                : "Add a customer to attach them to sales."
+            }
+          />
+        )}
       </div>
-    </div>
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+      />
+    </>
   );
 }

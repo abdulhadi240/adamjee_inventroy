@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { PackageSearch } from "lucide-react";
 import { getPaginatedProductsByUser } from "@/lib/actions/products";
 import Pagination, { PAGE_SIZE } from "@/components/ui/Pagination";
+import { EmptyState } from "@/components/ui/motion";
 import { usePagination } from "@/lib/hooks/use-pagination";
 import ProductRow from "@/components/features/inventory/ProductRow";
 import { Product } from "@/lib/types";
@@ -19,6 +21,7 @@ export default function ProductTable({
 }: ProductTableProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
   const { currentPage, handlePageChange } = usePagination();
 
   const searchParams = useSearchParams();
@@ -37,44 +40,54 @@ export default function ProductTable({
         setTotalPages(Math.ceil(res.total / PAGE_SIZE));
       } catch (err) {
         console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
   }, [currentPage, selectedFilter, refreshKey, searchQuery]);
 
   return (
-    <div className="pt-2 overflow-hidden">
+    <div>
       <div className="overflow-x-auto">
-        <table className="min-w-full bg-white text-left">
-          <thead className="text-sm sm:text-base">
+        <table className="data-table">
+          <thead>
             <tr>
-              <th className="py-2 px-2 md:px-4 hidden md:table-cell">
-                Supplier
-              </th>
-              <th className="py-2 px-2 md:px-4">Product</th>
-              <th className="py-2 px-2 md:px-4 hidden lg:table-cell">Type</th>
-              <th className="py-2 px-2 md:px-4 hidden lg:table-cell">Cost</th>
-              <th className="py-2 px-2 md:px-4 hidden md:table-cell">Price</th>
-              <th className="py-2 px-2 md:px-4">Qty</th>
-              <th className="py-2 px-2 md:px-4">Status</th>
+              <th>Product</th>
+              <th className="hidden lg:table-cell">Type</th>
+              <th className="hidden md:table-cell">Supplier</th>
+              <th className="hidden lg:table-cell text-right">Cost</th>
+              <th className="hidden md:table-cell text-right">Price</th>
+              <th className="text-right">Qty</th>
+              <th>Status</th>
             </tr>
           </thead>
-          <tbody className="text-sm sm:text-base border-t border-gray-300">
-            {products.map((product) => (
-              <ProductRow key={product.id} product={product} />
+          <tbody>
+            {loading &&
+              products.length === 0 &&
+              Array.from({ length: 5 }).map((_, i) => (
+                <tr key={`sk-${i}`}>
+                  <td colSpan={7}>
+                    <div className="h-9 rounded-lg bg-canvas" />
+                  </td>
+                </tr>
+              ))}
+            {products.map((product, i) => (
+              <ProductRow key={product.id} product={product} index={i} />
             ))}
-            {products.length === 0 && (
-              <tr>
-                <td
-                  colSpan={4}
-                  className="py-8 text-center text-gray-500 italic"
-                >
-                  No products found.
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
+        {!loading && products.length === 0 && (
+          <EmptyState
+            icon={PackageSearch}
+            title="No products found"
+            description={
+              searchQuery || selectedFilter
+                ? "Try a different search or filter."
+                : "Add your first product to start tracking stock."
+            }
+          />
+        )}
       </div>
       <Pagination
         currentPage={currentPage}

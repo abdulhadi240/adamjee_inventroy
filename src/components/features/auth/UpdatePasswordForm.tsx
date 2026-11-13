@@ -5,6 +5,7 @@ import { createClientBrowser } from "@/lib/supabase/client";
 import PasswordInput from "@/components/ui/PasswordInput";
 import RedirectingSpinner from "@/components/ui/RedirectingSpinner";
 import { Button } from "@/components/ui/Button";
+import { FormAlert, PendingLabel } from "./FormAlert";
 
 export default function UpdatePasswordForm() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -70,19 +71,20 @@ export default function UpdatePasswordForm() {
   }
 
   return (
-    <form
-      onSubmit={handleUpdatePassword}
-      className="flex flex-col gap-4 w-full sm:w-100"
-    >
+    <form onSubmit={handleUpdatePassword} className="flex flex-col gap-4">
       <PasswordInput
         name="password"
-        label="New Password"
+        label="New password"
         placeholder="Enter your new password"
       />
-      {errorMessage && <p className="text-red-500">{errorMessage}</p>}
-      {success && <p className="text-green-600">{success}</p>}
-      <Button type="submit" disabled={isPending}>
-        {isPending ? "Updating..." : "Update Password"}
+      <FormAlert tone="error" message={errorMessage} />
+      <FormAlert tone="success" message={success} />
+      <Button type="submit" disabled={isPending} className="mt-1 w-full">
+        <PendingLabel
+          pending={isPending}
+          busy="Updating…"
+          idle="Update password"
+        />
       </Button>
     </form>
   );

@@ -3,9 +3,26 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useDebouncedCallback } from "use-debounce";
-import { SearchIcon } from "@/components/icons";
+import { AnimatePresence, motion } from "motion/react";
+import {
+  ClipboardList,
+  Package,
+  Receipt,
+  Search,
+  Truck,
+  UserRound,
+  type LucideIcon,
+} from "lucide-react";
 import { globalSearch, SearchResult } from "@/lib/actions/search";
 import { getTypeLabel } from "@/lib/utils/formatters";
+
+const TYPE_ICONS: Record<SearchResult["type"], LucideIcon> = {
+  product: Package,
+  supplier: Truck,
+  customer: UserRound,
+  sale: Receipt,
+  order: ClipboardList,
+};
 
 export default function GlobalSearch() {
   const [query, setQuery] = useState("");
@@ -13,6 +30,7 @@ export default function GlobalSearch() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -77,6 +95,23 @@ export default function GlobalSearch() {
     setQuery("");
   };
 
+  // Press "/" anywhere to jump to search
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const target = e.target as HTMLElement;
+      if (
+        e.key === "/" &&
+        !["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)
+      ) {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+      if (e.key === "Escape") inputRef.current?.blur();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -92,65 +127,88 @@ export default function GlobalSearch() {
 
   return (
     <div className="relative w-full" ref={wrapperRef}>
-      <div className="relative">
+      <div className="group relative">
         <input
+          ref={inputRef}
           type="text"
-          placeholder="Search product, supplier, invoice..."
-          className="w-full text-sm sm:text-base p-2 pl-10 border border-gray-400 outline-none rounded-md focus:ring-1 focus:ring-blue-600 focus:border-blue-600 transition-all"
+          placeholder="Search products, suppliers, invoices…"
+          className="h-10 w-full rounded-full border border-line bg-white pl-10 pr-12 text-sm text-ink shadow-card outline-none transition-all duration-200 placeholder:text-muted/70 hover:border-navy-200 focus:border-navy-500 focus:ring-4 focus:ring-navy-500/10"
           value={query}
           onChange={onInputChange}
           onFocus={() => {
             if (query.length >= 2) setIsOpen(true);
           }}
         />
-        <div className="absolute left-3 top-0 h-full flex items-center pointer-events-none">
+        <div className="pointer-events-none absolute left-3.5 top-0 flex h-full items-center">
           {isLoading ? (
-            <div className="w-5 h-5 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
+            <div className="size-4 animate-spin rounded-full border-2 border-navy-100 border-t-navy-600" />
           ) : (
-            <SearchIcon className="w-5 h-5 text-gray-400" />
+            <Search className="size-4 text-muted transition-colors group-focus-within:text-navy-600" />
           )}
         </div>
+        <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-line bg-canvas px-1.5 py-0.5 font-sans text-[10px] font-semibold text-muted sm:block">
+          /
+        </kbd>
       </div>
 
-      {isOpen && query.length >= 2 && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-[9999] max-h-80 overflow-y-auto">
-          {isLoading && results.length === 0 && (
-            <div className="p-4 text-center text-gray-500 text-sm">
-              Searching...
-            </div>
-          )}
+      <AnimatePresence>
+        {isOpen && query.length >= 2 && (
+          <motion.div
+            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            transition={{ duration: 0.16 }}
+            className="absolute left-0 right-0 top-full z-[60] mt-2 max-h-96 origin-top overflow-y-auto rounded-2xl border border-line bg-white p-1.5 shadow-lift"
+          >
+            {isLoading && results.length === 0 && (
+              <div className="space-y-2 p-2">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="skeleton h-10" />
+                ))}
+              </div>
+            )}
 
-          {!isLoading && results.length > 0 && (
-            <ul className="py-2">
-              {results.map((result, index) => (
-                <li
-                  key={`${result.type}-${result.id}-${index}`}
-                  className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0 border-gray-100 transition-colors"
-                  onClick={() => handleSelect(result)}
-                >
-                  <div className="flex flex-col">
-                    <span className="font-medium text-gray-900 text-sm">
-                      {result.title}
-                    </span>
-                    <span className="text-xs text-gray-500 uppercase tracking-wider font-semibold mt-0.5">
-                      {getTypeLabel(result.type)} •{" "}
-                      <span className="normal-case font-normal">
-                        {result.subtitle}
+            {!isLoading && results.length > 0 && (
+              <ul>
+                {results.map((result, index) => {
+                  const Icon = TYPE_ICONS[result.type] ?? Search;
+                  return (
+                    <motion.li
+                      key={`${result.type}-${result.id}-${index}`}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.025 }}
+                      className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-canvas"
+                      onClick={() => handleSelect(result)}
+                    >
+                      <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-navy-50 text-navy-600">
+                        <Icon className="size-4" />
                       </span>
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-ink">
+                          {result.title}
+                        </p>
+                        <p className="truncate text-xs text-muted">
+                          <span className="font-semibold uppercase tracking-wide text-[10px]">
+                            {getTypeLabel(result.type)}
+                          </span>
+                          {result.subtitle ? ` · ${result.subtitle}` : ""}
+                        </p>
+                      </div>
+                    </motion.li>
+                  );
+                })}
+              </ul>
+            )}
 
-          {!isLoading && results.length === 0 && (
-            <div className="p-4 text-center text-gray-500 text-sm">
-              No results found for &quot;{query}&quot;
-            </div>
-          )}
-        </div>
-      )}
+            {!isLoading && results.length === 0 && (
+              <div className="p-5 text-center text-sm text-muted">
+                No results for &ldquo;{query}&rdquo;
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

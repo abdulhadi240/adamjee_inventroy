@@ -1,8 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion } from "motion/react";
+import { ArrowDownLeft, ArrowUpRight, History } from "lucide-react";
 import { getProductHistory } from "@/lib/actions/history";
-import { formatCurrency, formatDate, getStatusColor } from "@/lib/utils/formatters";
+import {
+  formatCurrency,
+  formatDate,
+  getStatusColor,
+} from "@/lib/utils/formatters";
+import { AnimatedCard, EmptyState } from "@/components/ui/motion";
 import { Product, HistoryItem } from "@/lib/types";
 
 export default function ProductHistoryTab({ product }: { product: Product }) {
@@ -25,109 +32,109 @@ export default function ProductHistoryTab({ product }: { product: Product }) {
 
   if (loading) {
     return (
-      <div className="p-8 text-center text-gray-500 animate-pulse bg-gray-50 rounded-lg">
-        Loading history data...
-      </div>
+      <AnimatedCard className="space-y-2.5">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="h-10 rounded-lg bg-canvas" />
+        ))}
+      </AnimatedCard>
     );
   }
 
   if (history.length === 0) {
     return (
-      <div className="p-8 text-center text-gray-500 border border-dashed border-gray-300 rounded-lg">
-        No transaction history found for this product.
-      </div>
+      <AnimatedCard>
+        <EmptyState
+          icon={History}
+          title="No activity yet"
+          description="Restocks and sales of this product will appear here."
+        />
+      </AnimatedCard>
     );
   }
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6">
-      <div className="mb-6 border-b pb-4">
-        <h2 className="text-lg font-bold text-gray-900">Transaction History</h2>
-        <p className="text-sm text-gray-500 mt-1">
-          Track all purchase orders (Restock) and sales activity for{" "}
-          <span className="font-semibold text-gray-900">
-            {product.product_name}
-          </span>
+    <AnimatedCard flush className="overflow-hidden">
+      <div className="px-5 py-4">
+        <h2 className="card-title">Stock movements</h2>
+        <p className="card-subtitle mt-0.5">
+          Purchase orders (in) and sales (out) for this product.
         </p>
       </div>
-
-      <div className="overflow-hidden border border-gray-200 rounded-lg">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100 text-gray-500 uppercase tracking-wider text-xs">
-              <tr>
-                <th className="px-6 py-3 font-semibold">Date</th>
-                <th className="px-6 py-3 font-semibold">Activity</th>
-                <th className="px-6 py-3 font-semibold">Party</th>
-                <th className="px-6 py-3 font-semibold text-right">Qty</th>
-                <th className="px-6 py-3 font-semibold text-right">
-                  Unit Price
-                </th>
-                <th className="px-6 py-3 font-semibold text-right">Total</th>
-                <th className="px-6 py-3 font-semibold text-center">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {history.map((item) => (
-                <tr
-                  key={item.id}
-                  className="hover:bg-gray-50 transition-colors"
+      <div className="overflow-x-auto">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Activity</th>
+              <th>Party</th>
+              <th className="text-right">Qty</th>
+              <th className="text-right">Unit price</th>
+              <th className="text-right">Total</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {history.map((item, i) => {
+              const isSale = item.type === "sale";
+              return (
+                <motion.tr
+                  key={`${item.type}-${item.id}-${i}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: Math.min(i, 10) * 0.02, duration: 0.25 }}
                 >
-                  <td className="px-6 py-3 text-gray-600 whitespace-nowrap">
+                  <td className="whitespace-nowrap text-muted">
                     {formatDate(item.date, true)}
                   </td>
-
-                  <td className="px-6 py-3">
-                    <span
-                      className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                        item.type === "sale"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-blue-100 text-blue-700"
-                      }`}
-                    >
-                      {item.type === "sale" ? "Sold" : "Restock"}
-                    </span>
-                    <div className="text-[10px] text-gray-400 mt-1">
-                      {item.id}
+                  <td>
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className={`grid size-7 place-items-center rounded-lg ${
+                          isSale
+                            ? "bg-rose-50 text-rose-600"
+                            : "bg-emerald-50 text-emerald-600"
+                        }`}
+                      >
+                        {isSale ? (
+                          <ArrowUpRight className="size-3.5" />
+                        ) : (
+                          <ArrowDownLeft className="size-3.5" />
+                        )}
+                      </span>
+                      <div>
+                        <p className="text-sm font-medium">
+                          {isSale ? "Sale" : "Restock"}
+                        </p>
+                        <p className="text-[11px] text-muted">{item.id}</p>
+                      </div>
                     </div>
                   </td>
-
-                  <td className="px-6 py-3 font-medium text-gray-800">
-                    {item.party_name}
-                  </td>
-
+                  <td className="font-medium">{item.party_name}</td>
                   <td
-                    className={`px-6 py-3 text-right font-medium ${
-                      item.type === "sale" ? "text-red-600" : "text-green-600"
+                    className={`text-right font-semibold tabular-nums ${
+                      isSale ? "text-rose-600" : "text-emerald-600"
                     }`}
                   >
-                    {item.type === "sale" ? "-" : "+"}
+                    {isSale ? "−" : "+"}
                     {item.quantity}
                   </td>
-
-                  <td className="px-6 py-3 text-right text-gray-600">
+                  <td className="text-right tabular-nums text-muted">
                     {formatCurrency(item.price_per_unit)}
                   </td>
-
-                  <td className="px-6 py-3 text-right font-bold text-gray-900">
+                  <td className="text-right font-semibold tabular-nums">
                     {formatCurrency(item.total_price)}
                   </td>
-
-                  <td className="px-6 py-3 text-center">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                        item.status
-                      )}`}
-                    >
+                  <td>
+                    <span className={`badge ${getStatusColor(item.status)}`}>
                       {item.status}
                     </span>
                   </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                </motion.tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
-    </div>
+    </AnimatedCard>
   );
 }

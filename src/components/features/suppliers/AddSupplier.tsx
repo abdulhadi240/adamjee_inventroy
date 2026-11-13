@@ -1,125 +1,139 @@
 "use client";
 
-import {
-  useState,
-  useActionState,
-  useEffect,
-  useRef,
-  useCallback,
-} from "react";
+import { useState, useActionState, useEffect, useRef } from "react";
+import { Plus } from "lucide-react";
 import { insertSupplier } from "@/lib/actions/suppliers";
 import { Button } from "@/components/ui/Button";
 import LabeledInput from "@/components/ui/LabeledInput";
 import Modal from "@/components/ui/Modal";
-import { FormState } from "@/lib/types";
+import { FormState, SupplierOption } from "@/lib/types";
 
-const initialState: FormState = {
+const initialState: FormState<SupplierOption> = {
   success: false,
   message: "",
 };
 
-const AddSupplier = ({ onOrderChange }: { onOrderChange: () => void }) => {
-  const [showForm, setShowForm] = useState(false);
-  const processedStateRef = useRef(initialState);
+interface SupplierFormModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  /** Called with the saved supplier after a successful insert. */
+  onCreated?: (supplier: SupplierOption) => void;
+  /** Prefills the name field (e.g. text typed into a picker). */
+  defaultName?: string;
+}
 
+/**
+ * The "New supplier" popup. Used by the Suppliers page and by every
+ * supplier picker's "Add new supplier" shortcut.
+ */
+export function SupplierFormModal({
+  isOpen,
+  onClose,
+  onCreated,
+  defaultName = "",
+}: SupplierFormModalProps) {
   const [state, formAction, isPending] = useActionState(
     insertSupplier,
     initialState
   );
+  const processedStateRef = useRef(initialState);
 
-  const formRef = useRef<HTMLFormElement>(null);
-
-  const handleDiscard = useCallback(() => {
-    formRef.current?.reset();
-    setShowForm(false);
-  }, []);
   useEffect(() => {
     if (state !== processedStateRef.current && state.message) {
-      alert(state.message);
       processedStateRef.current = state;
-      if (state.success) {
-        handleDiscard();
-        onOrderChange();
+      if (state.success && state.data) {
+        onCreated?.(state.data);
+        onClose();
+      } else if (!state.success) {
+        alert(state.message);
       }
     }
-  }, [state, onOrderChange, handleDiscard]);
+  }, [state, onCreated, onClose]);
 
   return (
-    <div className="">
-      <Button
-        onClick={() => setShowForm(true)}
-        className="text-xs sm:text-base"
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="New supplier"
+      description="Suppliers can be linked to products and purchase orders."
+      footer={
+        <>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Discard
+          </Button>
+          <Button type="submit" form="supplier-form" disabled={isPending}>
+            {isPending ? "Adding…" : "Add supplier"}
+          </Button>
+        </>
+      }
+    >
+      {/* Modal unmounts its content when closed, so defaults re-apply on each open */}
+      <form
+        id="supplier-form"
+        action={formAction}
+        className="grid gap-4 sm:grid-cols-2"
       >
-        Add Supplier
-      </Button>
-      <Modal
-        isOpen={showForm}
-        onClose={handleDiscard}
-        title="New Supplier"
-        footer={
-          <>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleDiscard}
-              className="text-xs sm:text-base"
-            >
-              Discard
-            </Button>
-            <Button
-              type="submit"
-              form="supplier-form"
-              disabled={isPending}
-              className="text-xs sm:text-base"
-            >
-              {isPending ? "Adding..." : "Add Supplier"}
-            </Button>
-          </>
-        }
-      >
-        <form
-          id="supplier-form"
-          ref={formRef}
-          action={formAction}
-          className="flex flex-col gap-5"
-        >
+        <div className="sm:col-span-2">
           <LabeledInput
             id="supplier_name"
             name="supplier_name"
-            label="Supplier Name"
+            label="Supplier name"
             type="text"
-            placeholder="e.g., PT. Stok Abadi"
+            placeholder="e.g., Al-Noor Traders"
+            defaultValue={defaultName}
+            autoFocus
             required
           />
+        </div>
 
+        <div className="sm:col-span-2">
           <LabeledInput
             id="address"
             name="address"
-            label="Address Supplier"
+            label="Address"
             type="text"
-            placeholder="e.g., Jl. Stok Abadi"
+            placeholder="e.g., Shop 12, Hall Road, Lahore"
             required
           />
+        </div>
 
-          <LabeledInput
-            id="contact_number"
-            name="contact_number"
-            label="Contact Number"
-            type="number"
-            placeholder="e.g., 081234567890"
-            required
-          />
+        <LabeledInput
+          id="contact_number"
+          name="contact_number"
+          label="Contact number"
+          type="tel"
+          inputMode="tel"
+          placeholder="e.g., 0300 1234567"
+          required
+        />
 
-          <LabeledInput
-            id="purchase_link"
-            name="purchase_link"
-            label="Purchase Link"
-            type="text"
-            placeholder="e.g., https://tokopedia.com/..."
-          />
-        </form>
-      </Modal>
-    </div>
+        <LabeledInput
+          id="purchase_link"
+          name="purchase_link"
+          label="Store / website (optional)"
+          type="text"
+          placeholder="e.g., https://daraz.pk/shop/…"
+        />
+      </form>
+    </Modal>
+  );
+}
+
+const AddSupplier = ({ onOrderChange }: { onOrderChange: () => void }) => {
+  const [showForm, setShowForm] = useState(false);
+
+  return (
+    <>
+      <Button onClick={() => setShowForm(true)}>
+        <Plus className="size-4" />
+        Add supplier
+      </Button>
+      <SupplierFormModal
+        isOpen={showForm}
+        onClose={() => setShowForm(false)}
+        onCreated={onOrderChange}
+      />
+    </>
   );
 };
 

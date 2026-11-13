@@ -1,7 +1,16 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
+import { AnimatePresence, motion } from "motion/react";
+import {
+  Check,
+  Copy,
+  ExternalLink,
+  Loader2,
+  Pencil,
+  Trash2,
+  X,
+} from "lucide-react";
 import { updateSupplier, deleteSupplier } from "@/lib/actions/suppliers";
 import {
   formatDisplayPhoneNumber,
@@ -9,17 +18,20 @@ import {
   formatToLocalPhone,
 } from "@/lib/utils/formatters";
 import { copyToClipboard } from "@/lib/utils/clipboard";
-import { Button } from "@/components/ui/Button";
-import { EditIcon, DeleteIcon, SaveIcon, CloseIcon } from "@/components/icons";
 import { Supplier } from "@/lib/types";
 
 interface SupplierRowProps {
   supplier: Supplier;
+  index?: number;
   onOrderChange: () => void;
 }
 
+const iconBtn =
+  "grid size-8 cursor-pointer place-items-center rounded-full border border-line bg-white text-muted transition-colors duration-150 hover:border-navy-200 hover:bg-navy-50 hover:text-navy-700 disabled:pointer-events-none disabled:opacity-40";
+
 export default function SupplierRow({
   supplier,
+  index = 0,
   onOrderChange,
 }: SupplierRowProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -30,20 +42,18 @@ export default function SupplierRow({
     supplier_name: supplier.supplier_name,
     address: supplier.address,
     contact_number: formatToLocalPhone(supplier.contact_number),
-    purchase_link: supplier.purchase_link,
+    purchase_link: supplier.purchase_link ?? "",
   });
 
   const handleCopyPhone = async () => {
-    if (isEditing) return;
+    if (isEditing || !supplier.contact_number) return;
 
-    const localPhone = formatToLocalPhone(supplier.contact_number);
-    const success = await copyToClipboard(localPhone);
-
+    const success = await copyToClipboard(
+      formatToLocalPhone(supplier.contact_number)
+    );
     if (success) {
       setIsCopied(true);
-      setTimeout(() => {
-        setIsCopied(false);
-      }, 2000);
+      setTimeout(() => setIsCopied(false), 1800);
     } else {
       alert("Failed to copy phone number.");
     }
@@ -61,7 +71,6 @@ export default function SupplierRow({
       const result = await updateSupplier(null, formData);
       if (result.success) {
         setIsEditing(false);
-        alert("Supplier updated!");
         onOrderChange();
       } else {
         alert(result.message);
@@ -70,12 +79,11 @@ export default function SupplierRow({
   };
 
   const handleDelete = () => {
-    if (!confirm("Are you sure? This will delete the supplier.")) return;
+    if (!confirm(`Delete supplier "${supplier.supplier_name}"?`)) return;
 
     startTransition(async () => {
       const result = await deleteSupplier(supplier.id);
       if (result.success) {
-        alert("Supplier deleted!");
         onOrderChange();
       } else {
         alert(result.message);
@@ -83,9 +91,20 @@ export default function SupplierRow({
     });
   };
 
+  const initials = supplier.supplier_name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w.charAt(0).toUpperCase())
+    .join("");
+
   return (
-    <tr className="hover:bg-gray-100">
-      <td className="py-2 px-4">
+    <motion.tr
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: isPending ? 0.6 : 1, y: 0 }}
+      transition={{ delay: index * 0.035, duration: 0.3 }}
+      className={isEditing ? "bg-navy-50/60" : ""}
+    >
+      <td>
         {isEditing ? (
           <input
             type="text"
@@ -93,14 +112,19 @@ export default function SupplierRow({
             onChange={(e) =>
               setEditData({ ...editData, supplier_name: e.target.value })
             }
-            className="border rounded p-1 w-full"
+            className="field py-1.5"
             disabled={isPending}
           />
         ) : (
-          supplier.supplier_name
+          <div className="flex items-center gap-2.5">
+            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-navy-50 text-[11px] font-semibold text-navy-700">
+              {initials || "S"}
+            </span>
+            <span className="font-medium">{supplier.supplier_name}</span>
+          </div>
         )}
       </td>
-      <td className="py-2 px-4">
+      <td className="hidden max-w-64 text-muted md:table-cell">
         {isEditing ? (
           <input
             type="text"
@@ -108,102 +132,141 @@ export default function SupplierRow({
             onChange={(e) =>
               setEditData({ ...editData, address: e.target.value })
             }
-            className="border rounded p-1 w-full"
+            className="field py-1.5"
             disabled={isPending}
           />
         ) : (
-          supplier.address
+          <span className="line-clamp-1">{supplier.address || "—"}</span>
         )}
       </td>
-      <td className="py-2 px-4 cursor-pointer" onClick={handleCopyPhone}>
+      <td>
         {isEditing ? (
           <input
-            type="number"
+            type="tel"
             value={editData.contact_number}
             onChange={(e) =>
               setEditData({ ...editData, contact_number: e.target.value })
             }
-            className="border rounded p-1 w-full no-spinner"
+            className="field py-1.5"
             disabled={isPending}
           />
         ) : (
-          <span
-            className={`cursor-pointer ${
-              isCopied ? "text-green-600 font-bold" : ""
-            }`}
+          <button
+            type="button"
+            onClick={handleCopyPhone}
+            title="Copy phone number"
+            className="group inline-flex cursor-pointer items-center gap-1.5 tabular-nums transition-colors hover:text-navy-600"
           >
-            {isCopied
-              ? "Copied!"
-              : formatDisplayPhoneNumber(supplier.contact_number)}
-          </span>
+            <AnimatePresence mode="wait" initial={false}>
+              {isCopied ? (
+                <motion.span
+                  key="copied"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className="inline-flex items-center gap-1 font-semibold text-emerald-600"
+                >
+                  <Check className="size-3.5" />
+                  Copied
+                </motion.span>
+              ) : (
+                <motion.span
+                  key="phone"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  className="inline-flex items-center gap-1.5"
+                >
+                  {formatDisplayPhoneNumber(supplier.contact_number)}
+                  <Copy className="size-3 opacity-0 transition-opacity group-hover:opacity-60" />
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </button>
         )}
       </td>
-      <td className="py-2 px-4">
+      <td className="text-center">
         {isEditing ? (
           <input
             type="text"
             value={editData.purchase_link}
+            placeholder="https://…"
             onChange={(e) =>
               setEditData({ ...editData, purchase_link: e.target.value })
             }
-            className="border rounded p-1 w-full"
+            className="field py-1.5"
             disabled={isPending}
           />
-        ) : (
-          <Link
+        ) : supplier.purchase_link ? (
+          <a
             href={formatPurchaseLink(supplier.purchase_link)}
             target="_blank"
-            className="text-blue-600 hover:underline"
+            rel="noopener noreferrer"
+            title={supplier.purchase_link}
+            aria-label="Open supplier store"
+            className={`${iconBtn} mx-auto`}
           >
-            {supplier.purchase_link}
-          </Link>
+            <ExternalLink className="size-3.5" />
+          </a>
+        ) : (
+          <span className="text-muted">—</span>
         )}
       </td>
-      <td className="py-2 px-4">
-        <div className="flex gap-2">
+      <td>
+        <div className="flex justify-end gap-1.5">
           {isEditing ? (
             <>
-              <Button
+              <button
                 type="button"
-                variant="primary"
                 onClick={handleSave}
                 disabled={isPending}
-                className="p-1 text-xs"
+                aria-label="Save"
+                className={`${iconBtn} border-navy-700 bg-navy-700 text-white hover:bg-navy-600 hover:text-white`}
               >
-                <SaveIcon className="w-4 h-4" />
-              </Button>
-              <Button
+                {isPending ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Check className="size-3.5" />
+                )}
+              </button>
+              <button
                 type="button"
-                variant="secondary"
                 onClick={() => setIsEditing(false)}
                 disabled={isPending}
-                className="p-1 text-xs"
+                aria-label="Cancel"
+                className={iconBtn}
               >
-                <CloseIcon className="w-4 h-4" />
-              </Button>
+                <X className="size-3.5" />
+              </button>
             </>
           ) : (
             <>
-              <Button
+              <button
                 type="button"
-                variant="secondary"
                 onClick={() => setIsEditing(true)}
-                className="p-1 text-xs"
+                disabled={isPending}
+                aria-label="Edit supplier"
+                className={iconBtn}
               >
-                <EditIcon className="w-4 h-4" />
-              </Button>
-              <Button
+                <Pencil className="size-3.5" />
+              </button>
+              <button
                 type="button"
-                variant="secondary"
                 onClick={handleDelete}
-                className="p-1 text-xs text-red-500"
+                disabled={isPending}
+                aria-label="Delete supplier"
+                className={`${iconBtn} hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600`}
               >
-                <DeleteIcon className="w-4 h-4" />
-              </Button>
+                {isPending ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="size-3.5" />
+                )}
+              </button>
             </>
           )}
         </div>
       </td>
-    </tr>
+    </motion.tr>
   );
 }
