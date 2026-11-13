@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import Sidebar from "@/components/layout/Sidebar";
@@ -27,7 +27,8 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
           className="mx-auto w-full max-w-[1500px] flex-1 px-4 py-6 md:px-7"
         >
-          {children}
+          {/* Pages read the URL via useSearchParams (tables, filters) */}
+          <Suspense fallback={null}>{children}</Suspense>
         </motion.main>
       </div>
     </div>

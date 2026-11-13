@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Menu } from "lucide-react";
 import GlobalSearch from "@/components/ui/GlobalSearch";
 import UserDropdown from "@/components/features/topbar/UserDropdown";
@@ -53,7 +53,10 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
       </div>
 
       <div className="max-w-xl flex-1">
-        <GlobalSearch />
+        {/* useSearchParams needs a Suspense boundary for static prerendering */}
+        <Suspense fallback={<div className="skeleton h-10 w-full rounded-xl" />}>
+          <GlobalSearch />
+        </Suspense>
       </div>
 
       <div className="ml-auto flex items-center gap-2">
