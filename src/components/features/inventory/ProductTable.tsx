@@ -68,7 +68,7 @@ export default function ProductTable({
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={`sk-${i}`}>
                   <td colSpan={7}>
-                    <div className="h-9 rounded-lg bg-canvas" />
+                    <div className="skeleton h-9" />
                   </td>
                 </tr>
               ))}
