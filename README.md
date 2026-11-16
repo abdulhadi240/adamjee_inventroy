@@ -60,8 +60,8 @@ yarn install
 ```
 
 ### 4. Environment Variables
-1. Rename the existing `.env.example` file to `.env.local`
-2. Open `.env.local` and update the Supabase credentials
+1. Copy `.env.example` to `.env.local`
+2. Open `.env.local` and fill in your Supabase project URL and publishable (anon) key. The build fails if either is missing.
 
 ### 5. Supabase Setup 🔑
 To ensure the application functions correctly, you must set up the necessary tables and storage buckets in your Supabase project.
@@ -73,6 +73,8 @@ The complete database schema (tables, relations, and types) is available in the 
 2. Go to the **SQL Editor**.
 3. Copy the content of [`schema.sql`](./schema.sql).
 4. Paste and click **Run**.
+
+> **Note:** `schema.sql` contains the tables only. The RLS policies, RPC functions (`create_new_sale`, `create_new_purchase_order`, dashboard/report stats), triggers and the `images` bucket were applied to the live project as Supabase migrations and are not yet in this repo. Run `supabase db pull` against the project to capture them before setting up a second environment.
 
 #### B. Storage Buckets
 1. Navigate to the **Storage** section in Supabase.
