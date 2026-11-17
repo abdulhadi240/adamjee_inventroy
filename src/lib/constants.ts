@@ -2,6 +2,7 @@ import {
   DashboardIcon,
   InventoryIcon,
   CategoriesIcon,
+  BundlesIcon,
   ReportsIcon,
   SuppliersIcon,
   OrdersIcon,
@@ -36,6 +37,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "Stock",
     links: [
       { href: "/inventory", label: "Inventory", icon: InventoryIcon },
+      { href: "/bundles", label: "Bundles", icon: BundlesIcon },
       { href: "/categories", label: "Categories", icon: CategoriesIcon },
       { href: "/orders", label: "Purchase Orders", icon: OrdersIcon },
       { href: "/suppliers", label: "Suppliers", icon: SuppliersIcon },
@@ -73,4 +75,18 @@ export const ORDER_STATUSES = [
   { label: "Pending", value: "Pending" },
   { label: "Shipped", value: "Shipped" },
   { label: "Completed", value: "Completed" },
+];
+
+/** Starter suggestions only; anything the user types is added to the list. */
+export const DEFAULT_BUNDLE_TYPES = ["PC", "Laptop"];
+
+export const DEFAULT_COMPONENT_NAMES = [
+  "Processor",
+  "Motherboard",
+  "RAM",
+  "Graphics card",
+  "SSD",
+  "Hard drive",
+  "Power supply",
+  "Casing",
 ];

@@ -285,11 +285,13 @@ export async function getTotalLowStockProducts() {
       .from("products")
       .select("*", { count: "exact", head: true })
       .gt("amount_stock", 0)
-      .lt("amount_stock", LOW_STOCK_THRESHOLD),
+      .lt("amount_stock", LOW_STOCK_THRESHOLD)
+      .eq("low_stock_alerts", true),
     supabase
       .from("products")
       .select("*", { count: "exact", head: true })
-      .eq("amount_stock", 0),
+      .eq("amount_stock", 0)
+      .eq("low_stock_alerts", true),
   ]);
 
   if (errorLow || errorNo) {

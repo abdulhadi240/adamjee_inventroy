@@ -7,6 +7,7 @@ export {
   Boxes as InventoryIcon,
   ChartNoAxesCombined as ReportsIcon,
   Tags as CategoriesIcon,
+  PackageOpen as BundlesIcon,
   Truck as SuppliersIcon,
   ClipboardList as OrdersIcon,
   Store as ManageStoreIcon,

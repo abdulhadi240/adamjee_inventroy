@@ -12,6 +12,8 @@ export async function getLowStockNotifications() {
       .from("products")
       .select("id, product_name, amount_stock, product_image")
       .lt("amount_stock", LOW_STOCK_THRESHOLD)
+      // Bundles (always 1) and parts sold out of a bundle (always 0) opt out
+      .eq("low_stock_alerts", true)
       .order("amount_stock", { ascending: true })
       .limit(20);
 

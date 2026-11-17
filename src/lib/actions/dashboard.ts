@@ -26,7 +26,7 @@ export async function getDashboardStats(period: string = "monthly") {
     supabase
       .from("products")
       .select(
-        "id, product_name, amount_stock, product_category, product_image, sell_price"
+        "id, product_name, amount_stock, product_category, product_image, sell_price, low_stock_alerts"
       ),
     supabase.from("orders").select("id, total_cost, status, created_at"),
     supabase
@@ -99,7 +99,9 @@ export async function getDashboardStats(period: string = "monthly") {
 
   const lowStock =
     productsData
-      ?.filter((p) => p.amount_stock < LOW_STOCK_THRESHOLD)
+      ?.filter(
+        (p) => p.low_stock_alerts && p.amount_stock < LOW_STOCK_THRESHOLD
+      )
       .sort((a, b) => a.amount_stock - b.amount_stock)
       .map((p) => ({
         id: String(p.id),

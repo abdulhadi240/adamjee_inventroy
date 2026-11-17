@@ -94,6 +94,95 @@ export type CategoryWithCount = Category & {
 };
 
 // -----------------------------------------------------------------------------------------------------------------------------
+// BUNDLES
+// -----------------------------------------------------------------------------------------------------------------------------
+
+/**
+ * A part inside a bundle (e.g. a graphics card inside a PC).
+ */
+export type BundleComponent = {
+  id: number;
+  /** The kind of part, e.g. "Processor" (or an inventory item's name). */
+  name: string;
+  /** The specific part, e.g. "Core i7-10700". */
+  model: string | null;
+  /** The inventory item this component was picked from, if any. */
+  product_id: number | null;
+  /** Units the bundle originally came with. */
+  quantity: number;
+  /** Cost attributed to one unit. */
+  unit_cost: number;
+  /** Units taken out of the bundle and sold on their own. */
+  removed_quantity: number;
+  removed_at: string | null;
+  /** The catalog item the sold units are recorded under on invoices. */
+  removed_product: {
+    id: number;
+    product_name: string;
+    amount_stock: number;
+  } | null;
+  /** The sales in which units of this component were sold separately. */
+  sales: {
+    quantity: number;
+    price_at_sale: number;
+    sale: { id: number; invoice_code: string; sale_date: string } | null;
+  }[];
+};
+
+/**
+ * A complete unit (PC, laptop, ...) bought as one item. It is backed by one
+ * inventory product, which is what gets sold.
+ */
+export type Bundle = {
+  id: number;
+  /** User-defined kind of bundle, e.g. "PC" or "Laptop". */
+  bundle_type: string;
+  /** What was paid for the whole unit. */
+  total_cost: number;
+  notes: string | null;
+  created_at: string;
+  /** The inventory product representing this bundle. */
+  product: {
+    id: number;
+    product_name: string;
+    sell_price: number;
+    /** 1 while in stock, 0 once the bundle is sold. */
+    amount_stock: number;
+    supplier: { id: number; supplier_name: string } | null;
+  };
+  components: BundleComponent[];
+};
+
+/** One component line in the "New bundle" form. */
+export type BundleComponentInput = {
+  name: string;
+  /** The specific part, e.g. "Core i7-10700". Empty when not given. */
+  model: string;
+  /** Inventory item the component was picked from, or null for a custom one. */
+  product_id: number | null;
+  quantity: number;
+  unit_cost: number;
+};
+
+/** Suggestions and pick-lists for the bundle forms. */
+export type BundleFormOptions = {
+  /** Bundle types: defaults plus every type used so far. */
+  types: string[];
+  /** Component names: defaults plus every name used so far. */
+  componentNames: string[];
+  categories: Category[];
+  suppliers: { id: number; supplier_name: string }[];
+  customers: { id: number; name: string }[];
+  /** Standalone inventory items a component can be picked from. */
+  products: {
+    id: number;
+    product_name: string;
+    amount_stock: number;
+    buy_price: number;
+  }[];
+};
+
+// -----------------------------------------------------------------------------------------------------------------------------
 // PRODUCTS
 // -----------------------------------------------------------------------------------------------------------------------------
 
