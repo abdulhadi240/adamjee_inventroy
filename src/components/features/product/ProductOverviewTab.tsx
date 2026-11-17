@@ -4,10 +4,12 @@ import { useState, useActionState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { updateProduct, deleteProduct } from "@/lib/actions/products";
-import { Product } from "@/lib/types";
+import { getAllCategories } from "@/lib/actions/categories";
+import { Category, Product } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
 import InfoRow from "@/components/ui/InfoRow";
 import LabeledInput from "@/components/ui/LabeledInput";
+import LabeledSelect from "@/components/ui/LabeledSelect";
 import ImageDropzone from "@/components/ui/ImageDropzone";
 import { Check, Copy, ExternalLink, Pencil, Trash2, X } from "lucide-react";
 import { AnimatedCard, CardHeader } from "@/components/ui/motion";
@@ -44,6 +46,19 @@ export default function ProductOverviewTab({
     null
   );
   const [isCopied, setIsCopied] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  // Load the category list when editing starts
+  useEffect(() => {
+    if (!isEditing) return;
+    let cancelled = false;
+    getAllCategories().then((data) => {
+      if (!cancelled) setCategories(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isEditing]);
 
   const [updateState, formAction, isPending] = useActionState(
     updateProduct,
@@ -186,12 +201,26 @@ export default function ProductOverviewTab({
                 name="product_type"
                 defaultValue={product.product_type}
               />
-              <LabeledInput
+              <LabeledSelect
                 id="product_category"
                 label="Category"
                 name="product_category"
                 defaultValue={product.product_category}
-              />
+              >
+                {/* Keep the current value selectable even if it is not in the list */}
+                {!categories.some(
+                  (c) => c.name === product.product_category
+                ) && (
+                  <option value={product.product_category}>
+                    {product.product_category}
+                  </option>
+                )}
+                {categories.map((category) => (
+                  <option key={category.id} value={category.name}>
+                    {category.name}
+                  </option>
+                ))}
+              </LabeledSelect>
               <LabeledInput
                 id="buy_price"
                 label="Cost price (Rs)"

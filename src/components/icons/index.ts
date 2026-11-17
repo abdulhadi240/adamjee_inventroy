@@ -6,6 +6,7 @@ export {
   LayoutDashboard as DashboardIcon,
   Boxes as InventoryIcon,
   ChartNoAxesCombined as ReportsIcon,
+  Tags as CategoriesIcon,
   Truck as SuppliersIcon,
   ClipboardList as OrdersIcon,
   Store as ManageStoreIcon,

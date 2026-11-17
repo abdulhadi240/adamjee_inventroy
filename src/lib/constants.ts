@@ -1,6 +1,7 @@
 import {
   DashboardIcon,
   InventoryIcon,
+  CategoriesIcon,
   ReportsIcon,
   SuppliersIcon,
   OrdersIcon,
@@ -35,6 +36,7 @@ export const NAV_SECTIONS: NavSection[] = [
     title: "Stock",
     links: [
       { href: "/inventory", label: "Inventory", icon: InventoryIcon },
+      { href: "/categories", label: "Categories", icon: CategoriesIcon },
       { href: "/orders", label: "Purchase Orders", icon: OrdersIcon },
       { href: "/suppliers", label: "Suppliers", icon: SuppliersIcon },
     ],
@@ -71,15 +73,4 @@ export const ORDER_STATUSES = [
   { label: "Pending", value: "Pending" },
   { label: "Shipped", value: "Shipped" },
   { label: "Completed", value: "Completed" },
-];
-
-export const PRODUCT_CATEGORIES = [
-  { label: "Laptops", value: "Laptops" },
-  { label: "Desktops", value: "Desktops" },
-  { label: "Monitors", value: "Monitors" },
-  { label: "Components", value: "Components" },
-  { label: "Storage", value: "Storage" },
-  { label: "Peripherals", value: "Peripherals" },
-  { label: "Networking", value: "Networking" },
-  { label: "Accessories", value: "Accessories" },
 ];

@@ -71,6 +71,29 @@ export type SupplierOption = {
 };
 
 // -----------------------------------------------------------------------------------------------------------------------------
+// CATEGORIES
+// -----------------------------------------------------------------------------------------------------------------------------
+
+/**
+ * A product category managed on the Categories page.
+ * Products reference a category by its name (`products.product_category`).
+ */
+export type Category = {
+  /** The unique identifier for the category. */
+  id: number;
+  /** The category name, unique per user (case-insensitive). */
+  name: string;
+};
+
+/**
+ * A category along with how many products are filed under it.
+ */
+export type CategoryWithCount = Category & {
+  /** Number of products currently using this category. */
+  product_count: number;
+};
+
+// -----------------------------------------------------------------------------------------------------------------------------
 // PRODUCTS
 // -----------------------------------------------------------------------------------------------------------------------------
 

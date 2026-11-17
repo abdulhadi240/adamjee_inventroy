@@ -12,8 +12,17 @@ import SearchableSelect from "@/components/ui/SearchableSelect";
 import { SupplierFormModal } from "@/components/features/suppliers/AddSupplier";
 import { useQuickCreate } from "@/lib/hooks/use-quick-create";
 import { formatDisplayPhoneNumber } from "@/lib/utils/formatters";
-import { FormState, ProductOption, SupplierOption } from "@/lib/types";
-import { PRODUCT_CATEGORIES } from "@/lib/constants";
+import { CategoryFormModal } from "@/components/features/categories/AddCategory";
+import { getAllCategories } from "@/lib/actions/categories";
+import {
+  Category,
+  FormState,
+  ProductOption,
+  SupplierOption,
+} from "@/lib/types";
+
+/** Select value that opens the "New category" popup instead of selecting. */
+const NEW_CATEGORY = "__new__";
 
 const initialState: FormState<ProductOption> = {
   success: false,
@@ -55,6 +64,9 @@ export function ProductFormModal({
     defaultSupplierId
   );
   const supplierQuick = useQuickCreate(suppliers);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [showCategoryForm, setShowCategoryForm] = useState(false);
 
   // Reset per-open state when the popup is (re)opened
   const [lastOpen, setLastOpen] = useState(isOpen);
@@ -63,8 +75,21 @@ export function ProductFormModal({
     if (isOpen) {
       setSelectedSupplierId(defaultSupplierId);
       setPreviewUrl(null);
+      setSelectedCategory("");
     }
   }
+
+  // Load the category list each time the popup opens
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    getAllCategories().then((data) => {
+      if (!cancelled) setCategories(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (state !== processedStateRef.current && state.message) {
@@ -153,17 +178,25 @@ export function ProductFormModal({
               label="Category"
               id="category"
               name="product_category"
-              defaultValue=""
+              value={selectedCategory}
+              onChange={(e) => {
+                if (e.target.value === NEW_CATEGORY) {
+                  setShowCategoryForm(true);
+                } else {
+                  setSelectedCategory(e.target.value);
+                }
+              }}
               required
             >
               <option value="" disabled>
                 Select category
               </option>
-              {PRODUCT_CATEGORIES.map((categories) => (
-                <option key={categories.value} value={categories.value}>
-                  {categories.label}
+              {categories.map((category) => (
+                <option key={category.id} value={category.name}>
+                  {category.name}
                 </option>
               ))}
+              <option value={NEW_CATEGORY}>+ New category…</option>
             </LabeledSelect>
             <LabeledInput
               label="Opening stock"
@@ -204,6 +237,16 @@ export function ProductFormModal({
         onCreated={(supplier) => {
           supplierQuick.add(supplier);
           setSelectedSupplierId(String(supplier.id));
+        }}
+      />
+      <CategoryFormModal
+        isOpen={showCategoryForm}
+        onClose={() => setShowCategoryForm(false)}
+        onCreated={(category) => {
+          setCategories((prev) =>
+            [...prev, category].sort((a, b) => a.name.localeCompare(b.name))
+          );
+          setSelectedCategory(category.name);
         }}
       />
     </>
