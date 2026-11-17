@@ -8,7 +8,7 @@ export async function getProductHistory(
 ): Promise<HistoryItem[]> {
   const supabase = await createClientServer();
 
-  const { data: purchaseData } = await supabase
+  const purchaseQuery = supabase
     .from("order_items")
     .select(
       `
@@ -25,7 +25,7 @@ export async function getProductHistory(
     )
     .eq("product_id", productId);
 
-  const { data: salesData } = await supabase
+  const salesQuery = supabase
     .from("sales_items")
     .select(
       `
@@ -40,6 +40,11 @@ export async function getProductHistory(
     `
     )
     .eq("product_id", productId);
+
+  const [{ data: purchaseData }, { data: salesData }] = await Promise.all([
+    purchaseQuery,
+    salesQuery,
+  ]);
 
   const purchases: HistoryItem[] = (
     (purchaseData as unknown as PurchaseQueryRow[]) || []

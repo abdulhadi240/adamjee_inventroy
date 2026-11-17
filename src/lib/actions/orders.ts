@@ -8,15 +8,14 @@ import {
   OrderItemState,
   OrderStatsData,
 } from "@/lib/types";
+import { getAuthUser } from "@/lib/supabase/auth";
 
 export async function insertOrder(
   previousState: FormState,
   formData: FormData
 ): Promise<FormState> {
   const supabase = await createClientServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(supabase);
   if (!user) return { success: false, message: "Not authenticated" };
 
   const supplier_id = Number(formData.get("supplier_id"));
@@ -147,9 +146,7 @@ export async function deleteOrder(orderId: number): Promise<FormState> {
 export async function getOverallOrderStats(): Promise<OrderStatsData | null> {
   const supabase = await createClientServer();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(supabase);
   if (!user) {
     return null;
   }

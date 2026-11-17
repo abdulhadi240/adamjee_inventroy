@@ -2,15 +2,14 @@
 
 import { createClientServer } from "@/lib/supabase/server";
 import { ReportData } from "@/lib/types";
+import { getAuthUser } from "@/lib/supabase/auth";
 
 export async function getReportData(
   startDate: string,
   endDate: string
 ): Promise<ReportData | null> {
   const supabase = await createClientServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(supabase);
   if (!user) return null;
 
   const formattedEndDate = new Date(endDate);

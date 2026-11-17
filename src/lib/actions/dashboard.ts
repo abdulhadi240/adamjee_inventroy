@@ -3,20 +3,57 @@
 import { createClientServer } from "@/lib/supabase/server";
 import { ChartData, DashboardCardStats } from "@/lib/types";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
+import { getAuthUser } from "@/lib/supabase/auth";
 
 export async function getDashboardStats(period: string = "monthly") {
   const supabase = await createClientServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(supabase);
   if (!user) return null;
 
-  const { data: salesStats, error: salesError } = await supabase
-    .rpc("get_dashboard_card_stats", { p_user_id: user.id })
-    .single<DashboardCardStats>();
+  // All queries are independent, so run them in one parallel batch
+  const [
+    { data: salesStats, error: salesError },
+    { data: productsData },
+    { data: orders },
+    { data: incomingItems },
+    { count: supplierCount },
+    { data: salesItems },
+    { data: chartData, error: chartError },
+  ] = await Promise.all([
+    supabase
+      .rpc("get_dashboard_card_stats", { p_user_id: user.id })
+      .single<DashboardCardStats>(),
+    supabase
+      .from("products")
+      .select(
+        "id, product_name, amount_stock, product_category, product_image, sell_price"
+      ),
+    supabase.from("orders").select("id, total_cost, status, created_at"),
+    supabase
+      .from("order_items")
+      .select(
+        `
+      quantity,
+      order:orders!inner(status)
+    `
+      )
+      .in("orders.status", ["Pending", "Shipped"]),
+    supabase.from("suppliers").select("*", { count: "exact", head: true }),
+    supabase
+      .from("sales_items")
+      .select("product_id, quantity, sale:sales!inner(user_id)")
+      .eq("sale.user_id", user.id),
+    supabase.rpc("get_dashboard_chart_data", {
+      p_user_id: user.id,
+      p_period: period,
+    }),
+  ]);
 
   if (salesError) {
     console.error("Error fetching dashboard card stats:", salesError.message);
+  }
+  if (chartError) {
+    console.error("Error fetching chart data:", chartError.message);
   }
 
   const totalRevenue = salesStats?.total_revenue || 0;
@@ -24,20 +61,10 @@ export async function getDashboardStats(period: string = "monthly") {
   const totalCost = salesStats?.total_cost || 0;
   const totalQuantitySold = salesStats?.total_qty_sold || 0;
 
-  const { data: productsData } = await supabase
-    .from("products")
-    .select(
-      "id, product_name, amount_stock, product_category, product_image, sell_price"
-    );
-
   const quantityInHand =
     productsData?.reduce((sum, p) => sum + p.amount_stock, 0) || 0;
   const uniqueCategories = new Set(productsData?.map((p) => p.product_category))
     .size;
-
-  const { data: orders } = await supabase
-    .from("orders")
-    .select("id, total_cost, status, created_at");
 
   const totalPurchaseOrders =
     orders?.reduce((sum, p) => sum + p.total_cost, 0) || 0;
@@ -47,27 +74,8 @@ export async function getDashboardStats(period: string = "monthly") {
     orders?.filter((p) => p.status === "Pending").length || 0;
   const totalOrders = orders?.length || 0;
 
-  const { data: incomingItems } = await supabase
-    .from("order_items")
-    .select(
-      `
-      quantity,
-      order:orders!inner(status)
-    `
-    )
-    .in("orders.status", ["Pending", "Shipped"]);
-
   const toBeReceived =
     incomingItems?.reduce((sum, item) => sum + item.quantity, 0) || 0;
-
-  const { count: supplierCount } = await supabase
-    .from("suppliers")
-    .select("*", { count: "exact", head: true });
-
-  const { data: salesItems } = await supabase
-    .from("sales_items")
-    .select("product_id, quantity, sale:sales!inner(user_id)")
-    .eq("sale.user_id", user.id);
 
   const productSalesMap = new Map<string, number>();
   salesItems?.forEach((item) => {
@@ -99,18 +107,6 @@ export async function getDashboardStats(period: string = "monthly") {
         remainingStock: p.amount_stock,
         image: p.product_image,
       })) || [];
-
-  const { data: chartData, error: chartError } = await supabase.rpc(
-    "get_dashboard_chart_data",
-    {
-      p_user_id: user.id,
-      p_period: period,
-    }
-  );
-
-  if (chartError) {
-    console.error("Error fetching chart data:", chartError.message);
-  }
 
   return {
     sales: {

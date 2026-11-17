@@ -7,8 +7,7 @@ import UserDropdown from "@/components/features/topbar/UserDropdown";
 import NotificationDropdown from "@/components/features/topbar/NotificationDropdown";
 import Logo from "@/components/brand/Logo";
 import { User, StockAlert } from "@/lib/types";
-import { getProfile } from "@/lib/actions/profile";
-import { getLowStockNotifications } from "@/lib/actions/notifications";
+import { getTopbarData } from "@/lib/actions/profile";
 
 interface TopbarProps {
   onMenuClick: () => void;
@@ -22,10 +21,8 @@ export default function Topbar({ onMenuClick }: TopbarProps) {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [userData, notificationData] = await Promise.all([
-          getProfile(),
-          getLowStockNotifications(),
-        ]);
+        const { user: userData, alerts: notificationData } =
+          await getTopbarData();
 
         setUser(userData);
         setAlerts(notificationData);

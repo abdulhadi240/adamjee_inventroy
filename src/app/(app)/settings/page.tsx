@@ -1,16 +1,14 @@
 import { createClientServer } from "@/lib/supabase/server";
 import SettingsClientWrapper from "@/components/features/settings/SettingsClientWrapper";
 import { redirect } from "next/navigation";
+import { getAuthUser } from "@/lib/supabase/auth";
 
 export default async function SettingsPage() {
   const supabase = await createClientServer();
 
-  const {
-    data: { user: authUser },
-    error: authError,
-  } = await supabase.auth.getUser();
+  const authUser = await getAuthUser(supabase);
 
-  if (authError || !authUser) {
+  if (!authUser) {
     redirect("/login");
   }
 

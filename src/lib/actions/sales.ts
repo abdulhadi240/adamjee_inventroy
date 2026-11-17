@@ -3,15 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { createClientServer } from "@/lib/supabase/server";
 import { FormState, SaleItemState, SalesStatsData } from "@/lib/types";
+import { getAuthUser } from "@/lib/supabase/auth";
 
 export async function insertSale(
   previousState: FormState,
   formData: FormData
 ): Promise<FormState> {
   const supabase = await createClientServer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(supabase);
   if (!user) return { success: false, message: "Not authenticated" };
 
   // No customer selected = walk-in sale (null)
@@ -167,9 +166,7 @@ export async function getPaginatedSales(
 export async function getOverallSalesStats(): Promise<SalesStatsData | null> {
   const supabase = await createClientServer();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(supabase);
   if (!user) {
     return null;
   }

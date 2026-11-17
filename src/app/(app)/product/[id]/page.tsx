@@ -8,13 +8,16 @@ interface ProductPageProps {
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const resolvedParams = await params;
-  const product = await getProductById(resolvedParams.id);
+  const numericId = parseInt(resolvedParams.id, 10);
+
+  const [product, stockStats] = await Promise.all([
+    getProductById(resolvedParams.id),
+    isNaN(numericId) ? null : getProductStockStats(numericId),
+  ]);
 
   if (!product) {
     return redirect("/inventory");
   }
-
-  const stockStats = await getProductStockStats(product.id as number);
 
   return <ProductDetailView product={product} stockStats={stockStats} />;
 }

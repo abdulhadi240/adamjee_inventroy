@@ -3,14 +3,14 @@
 import { createClientServer } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { FormState, User } from "@/lib/types";
+import { getLowStockNotifications } from "@/lib/actions/notifications";
+import { getAuthUser } from "@/lib/supabase/auth";
 
 export async function getProfile(): Promise<User | null> {
   const supabase = await createClientServer();
 
   try {
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
+    const authUser = await getAuthUser(supabase);
 
     if (!authUser) return null;
 
@@ -44,15 +44,25 @@ export async function getProfile(): Promise<User | null> {
   }
 }
 
+/**
+ * Everything the top bar needs, in one request. Server actions called from
+ * the browser run one at a time, so separate calls would queue up.
+ */
+export async function getTopbarData() {
+  const [user, alerts] = await Promise.all([
+    getProfile(),
+    getLowStockNotifications(),
+  ]);
+  return { user, alerts };
+}
+
 export async function updateProfile(
   prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
   const supabase = await createClientServer();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(supabase);
 
   if (!user) {
     return { success: false, message: "Unauthorized" };

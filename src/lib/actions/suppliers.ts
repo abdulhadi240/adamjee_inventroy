@@ -4,6 +4,7 @@ import { createClientServer } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { sanitizePhoneNumber } from "@/lib/utils/formatters";
 import { FormState, SupplierOption } from "@/lib/types";
+import { getAuthUser } from "@/lib/supabase/auth";
 
 export async function getAllSuppliers() {
   const supabase = await createClientServer();
@@ -27,12 +28,9 @@ export async function insertSupplier(
 ): Promise<FormState<SupplierOption>> {
   const supabase = await createClientServer();
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(supabase);
 
-  if (userError || !user) {
+  if (!user) {
     return { success: false, message: "User not authenticated." };
   }
 

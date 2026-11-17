@@ -3,6 +3,7 @@
 import { createClientServer } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { Category, CategoryWithCount, FormState } from "@/lib/types";
+import { getAuthUser } from "@/lib/supabase/auth";
 
 const UNIQUE_VIOLATION = "23505";
 
@@ -66,12 +67,9 @@ export async function insertCategory(
 ): Promise<FormState<Category>> {
   const supabase = await createClientServer();
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(supabase);
 
-  if (userError || !user) {
+  if (!user) {
     return { success: false, message: "User not authenticated." };
   }
 

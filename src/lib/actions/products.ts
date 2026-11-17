@@ -5,6 +5,7 @@ import { Product, ProductOption, FormState } from "@/lib/types";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
+import { getAuthUser } from "@/lib/supabase/auth";
 
 export async function uploadProductImage(file: File): Promise<string | null> {
   const supabase = await createClientServer();
@@ -34,12 +35,9 @@ export async function insertProduct(
 ): Promise<FormState<ProductOption>> {
   const supabase = await createClientServer();
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const user = await getAuthUser(supabase);
 
-  if (userError || !user) {
+  if (!user) {
     return { success: false, message: "User not authenticated." };
   }
 
@@ -279,15 +277,20 @@ export async function getTotalCategoryProducts() {
 
 export async function getTotalLowStockProducts() {
   const supabase = await createClientServer();
-  const { count: lowStockCount, error: errorLow } = await supabase
-    .from("products")
-    .select("*", { count: "exact", head: true })
-    .gt("amount_stock", 0)
-    .lt("amount_stock", LOW_STOCK_THRESHOLD);
-  const { count: noStockCount, error: errorNo } = await supabase
-    .from("products")
-    .select("*", { count: "exact", head: true })
-    .eq("amount_stock", 0);
+  const [
+    { count: lowStockCount, error: errorLow },
+    { count: noStockCount, error: errorNo },
+  ] = await Promise.all([
+    supabase
+      .from("products")
+      .select("*", { count: "exact", head: true })
+      .gt("amount_stock", 0)
+      .lt("amount_stock", LOW_STOCK_THRESHOLD),
+    supabase
+      .from("products")
+      .select("*", { count: "exact", head: true })
+      .eq("amount_stock", 0),
+  ]);
 
   if (errorLow || errorNo) {
     console.error("Error fetching stock products: ", errorLow?.message);
