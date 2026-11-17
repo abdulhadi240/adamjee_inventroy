@@ -6,7 +6,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { Camera, Mail, RotateCcw, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import InputField from "@/components/ui/InputField";
-import { FormAlert, PendingLabel } from "@/components/features/auth/FormAlert";
+import { notify } from "@/components/ui/Dialog";
+import { PendingLabel } from "@/components/features/auth/FormAlert";
 import { updateProfile } from "@/lib/actions/profile";
 import { FormState, User } from "@/lib/types";
 
@@ -26,6 +27,7 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
   const [name, setName] = useState(user?.name || "");
 
   useEffect(() => {
+    if (state.message) notify(state.message, state.success ? "success" : "error");
     if (state.success) {
       setPreviewUrl(null);
       if (fileRef.current) fileRef.current.value = "";
@@ -139,8 +141,6 @@ export function ProfileSettings({ user }: ProfileSettingsProps) {
           disabled
         />
       </div>
-
-      <FormAlert tone={state.success ? "success" : "error"} message={state.message} />
 
       <div className="flex justify-end border-t border-line pt-5">
         <Button type="submit" disabled={isPending}>

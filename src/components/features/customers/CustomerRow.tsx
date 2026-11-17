@@ -1,5 +1,6 @@
 "use client";
 
+import { notify, confirmDialog } from "@/components/ui/Dialog";
 import { useState, useTransition } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, Copy, Pencil, Trash2, X } from "lucide-react";
@@ -59,20 +60,24 @@ export default function CustomerRow({
         setIsEditing(false);
         onOrderChange();
       } else {
-        alert(result.message);
+        notify(result.message);
       }
     });
   };
 
-  const handleDelete = () => {
-    if (!confirm(`Delete ${customer.name}?`)) return;
+  const handleDelete = async () => {
+    const ok = await confirmDialog(`Delete "${customer.name}"?`, {
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
 
     startTransition(async () => {
       const result = await deleteCustomer(customer.id);
       if (result.success) {
         onOrderChange();
       } else {
-        alert(result.message);
+        notify(result.message);
       }
     });
   };

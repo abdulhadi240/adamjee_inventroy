@@ -1,5 +1,6 @@
 "use client";
 
+import { notify } from "@/components/ui/Dialog";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
@@ -102,7 +103,7 @@ export default function BundleFormModal({
     };
 
     if (!type.trim()) {
-      alert("Choose or type a bundle type.");
+      notify("Choose or type a bundle type.");
       return;
     }
 
@@ -125,7 +126,7 @@ export default function BundleFormModal({
         onClose();
         router.refresh();
       } else {
-        alert(result.message);
+        notify(result.message);
       }
     });
   };

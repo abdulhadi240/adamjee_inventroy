@@ -1,5 +1,6 @@
 "use client";
 
+import { notify, confirmDialog } from "@/components/ui/Dialog";
 import { useState, useTransition } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -55,7 +56,7 @@ export default function SupplierRow({
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 1800);
     } else {
-      alert("Failed to copy phone number.");
+      notify("Couldn't copy the number.");
     }
   };
 
@@ -73,20 +74,24 @@ export default function SupplierRow({
         setIsEditing(false);
         onOrderChange();
       } else {
-        alert(result.message);
+        notify(result.message);
       }
     });
   };
 
-  const handleDelete = () => {
-    if (!confirm(`Delete supplier "${supplier.supplier_name}"?`)) return;
+  const handleDelete = async () => {
+    const ok = await confirmDialog(`Delete "${supplier.supplier_name}"?`, {
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
 
     startTransition(async () => {
       const result = await deleteSupplier(supplier.id);
       if (result.success) {
         onOrderChange();
       } else {
-        alert(result.message);
+        notify(result.message);
       }
     });
   };

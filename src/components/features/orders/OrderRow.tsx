@@ -1,5 +1,6 @@
 "use client";
 
+import { notify, confirmDialog } from "@/components/ui/Dialog";
 import { useState, useTransition } from "react";
 import { motion } from "motion/react";
 import { Check, Loader2, Package, Pencil, Trash2, X } from "lucide-react";
@@ -72,9 +73,10 @@ export default function OrderRow({
   const handleSave = async () => {
     if (
       editData.status === "Completed" &&
-      !window.confirm(
-        "Mark as completed? All items in this order will be added to stock. This can't be undone."
-      )
+      !(await confirmDialog(
+        "Mark as completed? Items are added to stock. This can't be undone.",
+        { confirmLabel: "Complete" }
+      ))
     ) {
       return;
     }
@@ -90,16 +92,17 @@ export default function OrderRow({
         setIsEditing(false);
         onOrderChange();
       } else {
-        alert(result.message);
+        notify(result.message);
       }
     });
   };
 
   const handleDelete = async () => {
     if (
-      !window.confirm(
-        "Are you sure you want to delete this order? This action cannot be undone."
-      )
+      !(await confirmDialog("Delete this order? This can't be undone.", {
+        confirmLabel: "Delete",
+        danger: true,
+      }))
     ) {
       return;
     }
@@ -109,7 +112,7 @@ export default function OrderRow({
       if (result.success) {
         onOrderChange();
       } else {
-        alert(result.message);
+        notify(result.message);
       }
     });
   };

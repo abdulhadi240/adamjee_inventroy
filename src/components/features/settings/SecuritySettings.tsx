@@ -5,7 +5,8 @@ import { ShieldCheck } from "lucide-react";
 import { updatePasswordSettings } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/Button";
 import PasswordInput from "@/components/ui/PasswordInput";
-import { FormAlert, PendingLabel } from "@/components/features/auth/FormAlert";
+import { notify } from "@/components/ui/Dialog";
+import { PendingLabel } from "@/components/features/auth/FormAlert";
 import { FormState } from "@/lib/types";
 
 const initialState: FormState = { success: false, message: "" };
@@ -18,10 +19,11 @@ export function SecuritySettings() {
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
+    if (state?.message) notify(state.message, state.success ? "success" : "error");
     if (state?.success) {
       formRef.current?.reset();
     }
-  }, [state?.success]);
+  }, [state]);
 
   return (
     <form ref={formRef} action={formAction} className="flex flex-col gap-5">
@@ -54,8 +56,6 @@ export function SecuritySettings() {
           placeholder="Repeat new password"
         />
       </div>
-
-      <FormAlert tone={state?.success ? "success" : "error"} message={state?.message} />
 
       <div className="flex justify-end border-t border-line pt-5">
         <Button type="submit" disabled={isPending}>

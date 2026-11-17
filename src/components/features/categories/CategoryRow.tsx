@@ -1,5 +1,6 @@
 "use client";
 
+import { notify, confirmDialog } from "@/components/ui/Dialog";
 import { useState, useTransition } from "react";
 import { motion } from "motion/react";
 import { Check, Loader2, Pencil, Tag, Trash2, X } from "lucide-react";
@@ -38,20 +39,24 @@ export default function CategoryRow({
         setIsEditing(false);
         onChange();
       } else {
-        alert(result.message);
+        notify(result.message);
       }
     });
   };
 
-  const handleDelete = () => {
-    if (!confirm(`Delete category "${category.name}"?`)) return;
+  const handleDelete = async () => {
+    const ok = await confirmDialog(`Delete "${category.name}"?`, {
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
 
     startTransition(async () => {
       const result = await deleteCategory(category.id);
       if (result.success) {
         onChange();
       } else {
-        alert(result.message);
+        notify(result.message);
       }
     });
   };

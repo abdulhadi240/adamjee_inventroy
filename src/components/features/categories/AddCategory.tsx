@@ -1,5 +1,6 @@
 "use client";
 
+import { notify } from "@/components/ui/Dialog";
 import { useState, useActionState, useEffect, useRef } from "react";
 import { Plus } from "lucide-react";
 import { insertCategory } from "@/lib/actions/categories";
@@ -42,7 +43,7 @@ export function CategoryFormModal({
         onCreated?.(state.data);
         onClose();
       } else if (!state.success) {
-        alert(state.message);
+        notify(state.message);
       }
     }
   }, [state, onCreated, onClose]);

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { ImagePlus } from "lucide-react";
+import { notify } from "./Dialog";
 
 interface ImageDropzoneProps {
   name: string;
@@ -19,19 +20,15 @@ export default function ImageDropzone({
   previewUrl,
 }: ImageDropzoneProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const handleFileChange = (file: File | null) => {
-    setError(null);
-
     if (!file) {
       onChange(null);
       return;
     }
 
     if (file.size > MAX_FILE_SIZE_BYTES) {
-      setError(`File is too large. Max size is ${MAX_FILE_SIZE_MB}MB.`);
-      setTimeout(() => setError(null), 3000);
+      notify(`Image is too large. Max ${MAX_FILE_SIZE_MB}MB.`);
       onChange(null);
       return;
     }
@@ -109,7 +106,6 @@ export default function ImageDropzone({
           onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
         />
       </label>
-      {error && <p className="mt-2 text-center text-xs text-rose-600">{error}</p>}
     </div>
   );
 }

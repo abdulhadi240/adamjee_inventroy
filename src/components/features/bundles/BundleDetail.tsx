@@ -1,5 +1,6 @@
 "use client";
 
+import { notify, confirmDialog } from "@/components/ui/Dialog";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -129,20 +130,19 @@ export default function BundleDetail({ bundle, options }: BundleDetailProps) {
         if (onSuccess) onSuccess();
         else router.refresh();
       } else {
-        alert(result.message);
+        notify(result.message);
       }
     });
   };
 
-  const handleDeleteBundle = () => {
+  const handleDeleteBundle = async () => {
     const taken = bundle.components.some((c) => c.removed_quantity > 0);
-    if (
-      !confirm(
-        `Delete "${bundle.product.product_name}"? It is removed from inventory too.` +
-          (taken ? " Sales of parts already taken out are kept." : ""),
-      )
-    )
-      return;
+    const ok = await confirmDialog(
+      `Delete "${bundle.product.product_name}"? It leaves inventory too.` +
+        (taken ? " Past part sales are kept." : ""),
+      { confirmLabel: "Delete", danger: true },
+    );
+    if (!ok) return;
     run(
       null,
       () => deleteBundle(bundle.id),
@@ -150,23 +150,21 @@ export default function BundleDetail({ bundle, options }: BundleDetailProps) {
     );
   };
 
-  const handleUndoSale = (component: BundleComponent) => {
-    if (
-      !confirm(
-        `Cancel the sale of ${getComponentLabel(component)}? Its invoice is deleted and it goes back into the bundle.`,
-      )
-    )
-      return;
+  const handleUndoSale = async (component: BundleComponent) => {
+    const ok = await confirmDialog(
+      `Cancel the sale of "${getComponentLabel(component)}"? Its invoice is deleted.`,
+      { confirmLabel: "Cancel sale", danger: true },
+    );
+    if (!ok) return;
     run(component.id, () => undoBundleComponentSale(bundle.id, component.id));
   };
 
-  const handleDeleteComponent = (component: BundleComponent) => {
-    if (
-      !confirm(
-        `Remove "${getComponentLabel(component)}" from this bundle's list?`,
-      )
-    )
-      return;
+  const handleDeleteComponent = async (component: BundleComponent) => {
+    const ok = await confirmDialog(
+      `Remove "${getComponentLabel(component)}" from this bundle?`,
+      { confirmLabel: "Remove", danger: true },
+    );
+    if (!ok) return;
     run(component.id, () => deleteBundleComponent(bundle.id, component.id));
   };
 

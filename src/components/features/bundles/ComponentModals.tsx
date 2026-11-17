@@ -1,5 +1,6 @@
 "use client";
 
+import { notify } from "@/components/ui/Dialog";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -57,7 +58,7 @@ export function ComponentFormModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      alert("Choose or type a component.");
+      notify("Choose or type a component.");
       return;
     }
     const input = {
@@ -77,7 +78,7 @@ export function ComponentFormModal({
         onClose();
         router.refresh();
       } else {
-        alert(result.message);
+        notify(result.message);
       }
     });
   };
@@ -236,7 +237,7 @@ export function SellComponentModal({
         onClose();
         router.refresh();
       } else {
-        alert(result.message);
+        notify(result.message);
       }
     });
   };

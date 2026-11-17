@@ -1,5 +1,6 @@
 "use client";
 
+import { notify } from "@/components/ui/Dialog";
 import { useState, useActionState, useEffect, useRef } from "react";
 import { Plus } from "lucide-react";
 import { insertProduct } from "@/lib/actions/products";
@@ -98,7 +99,7 @@ export function ProductFormModal({
         onCreated?.(state.data);
         onClose();
       } else if (!state.success) {
-        alert(state.message);
+        notify(state.message);
       }
     }
   }, [state, onCreated, onClose]);

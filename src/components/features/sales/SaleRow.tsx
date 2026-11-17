@@ -1,5 +1,6 @@
 "use client";
 
+import { notify, confirmDialog } from "@/components/ui/Dialog";
 import { useState, useTransition } from "react";
 import { motion } from "motion/react";
 import { Check, Package, Pencil, Trash2, X } from "lucide-react";
@@ -72,25 +73,24 @@ export default function SaleRow({
         setIsEditing(false);
         onOrderChange();
       } else {
-        alert(result.message);
+        notify(result.message);
       }
     });
   };
 
-  const handleDelete = () => {
-    if (
-      !confirm(
-        "Delete this sale? The sold quantities will be restored to inventory."
-      )
-    )
-      return;
+  const handleDelete = async () => {
+    const ok = await confirmDialog("Delete this sale? Stock will be restored.", {
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
 
     startTransition(async () => {
       const result = await deleteSale(sale.id);
       if (result.success) {
         onOrderChange();
       } else {
-        alert(result.message);
+        notify(result.message);
       }
     });
   };

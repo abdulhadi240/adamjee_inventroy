@@ -1,5 +1,6 @@
 "use client";
 
+import { notify } from "@/components/ui/Dialog";
 import {
   useState,
   useActionState,
@@ -228,7 +229,7 @@ export default function AddSale({
         handleDiscard();
         onSaleChange();
       } else {
-        alert(state.message);
+        notify(state.message);
       }
     }
   }, [state, onSaleChange, handleDiscard]);

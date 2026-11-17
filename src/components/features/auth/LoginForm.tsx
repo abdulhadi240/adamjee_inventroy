@@ -1,18 +1,23 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowRight, Mail } from "lucide-react";
 import { login } from "@/lib/actions/auth";
 import PasswordInput from "@/components/ui/PasswordInput";
 import InputField from "@/components/ui/InputField";
 import { Button } from "@/components/ui/Button";
-import { FormAlert, PendingLabel } from "./FormAlert";
+import { notify } from "@/components/ui/Dialog";
+import { PendingLabel } from "./FormAlert";
 
 const initialState = { success: "", error: "" };
 
 export default function LoginForm() {
   const [state, formAction, isPending] = useActionState(login, initialState);
+
+  useEffect(() => {
+    if (state.error) notify(state.error);
+  }, [state]);
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -40,8 +45,6 @@ export default function LoginForm() {
           Forgot password?
         </Link>
       </div>
-
-      <FormAlert tone="error" message={state.error} />
 
       <Button type="submit" disabled={isPending} className="group mt-1 w-full">
         <PendingLabel

@@ -1,5 +1,6 @@
 "use client";
 
+import { notify, confirmDialog } from "@/components/ui/Dialog";
 import { useState, useActionState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -68,7 +69,7 @@ export default function ProductOverviewTab({
 
   useEffect(() => {
     if (updateState.message) {
-      alert(updateState.message);
+      notify(updateState.message, updateState.success ? "success" : "error");
       if (updateState.success) {
         setIsEditing(false);
         setNewImageFile(null);
@@ -94,14 +95,18 @@ export default function ProductOverviewTab({
     setNewImagePreviewUrl(null);
   };
 
-  const handleDelete = () => {
-    if (!window.confirm("Are you sure you want to delete this product?"))
-      return;
+  const handleDelete = async () => {
+    const ok = await confirmDialog("Delete this product?", {
+      confirmLabel: "Delete",
+      danger: true,
+    });
+    if (!ok) return;
     startDeleteTransition(async () => {
       const result = await deleteProduct(product.id);
-      alert(result.message);
       if (result.success) {
         router.push("/inventory");
+      } else {
+        notify(result.message);
       }
     });
   };

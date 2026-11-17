@@ -1,11 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
 import { Mail, Send } from "lucide-react";
 import { resetPasswordEmail } from "@/lib/actions/auth";
 import InputField from "@/components/ui/InputField";
 import { Button } from "@/components/ui/Button";
-import { FormAlert, PendingLabel } from "./FormAlert";
+import { notify } from "@/components/ui/Dialog";
+import { PendingLabel } from "./FormAlert";
 
 const initialState = {
   error: "",
@@ -18,6 +19,11 @@ export default function ForgotPasswordForm() {
     initialState
   );
 
+  useEffect(() => {
+    if (state?.error) notify(state.error);
+    else if (state?.success) notify(state.success, "success");
+  }, [state]);
+
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <InputField
@@ -29,9 +35,6 @@ export default function ForgotPasswordForm() {
         icon={<Mail />}
         required
       />
-
-      <FormAlert tone="error" message={state?.error} />
-      <FormAlert tone="success" message={state?.success} />
 
       <Button type="submit" disabled={isPending} className="mt-1 w-full">
         <PendingLabel

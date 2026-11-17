@@ -1,7 +1,8 @@
 "use client";
 
+import { notify } from "@/components/ui/Dialog";
 import { useState, useActionState, useEffect, useRef } from "react";
-import { AlertTriangle, CircleCheck, CircleX, Truck } from "lucide-react";
+import { AlertTriangle, Truck } from "lucide-react";
 import { insertOrder } from "@/lib/actions/orders";
 import { Button } from "@/components/ui/Button";
 import LabeledInput from "@/components/ui/LabeledInput";
@@ -33,8 +34,11 @@ export default function ProductPurchaseTab({
   const [status, setStatus] = useState("Pending");
 
   useEffect(() => {
-    if (state.success) {
-      alert("Purchase Order created successfully!");
+    if (!state.message) return;
+    if (!state.success) {
+      notify(state.message);
+    } else {
+      notify("Purchase order created.", "success");
       formRef.current?.reset();
       setQuantity("1");
       setCost(String(product.buy_price));
@@ -130,23 +134,6 @@ export default function ProductPurchaseTab({
             ))}
           </LabeledSelect>
         </div>
-
-        {state.message && (
-          <div
-            className={`mt-4 flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm ${
-              state.success
-                ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100"
-                : "bg-rose-50 text-rose-700 ring-1 ring-rose-100"
-            }`}
-          >
-            {state.success ? (
-              <CircleCheck className="size-4 shrink-0" />
-            ) : (
-              <CircleX className="size-4 shrink-0" />
-            )}
-            {state.message}
-          </div>
-        )}
       </AnimatedCard>
 
       <AnimatedCard className="flex flex-col">

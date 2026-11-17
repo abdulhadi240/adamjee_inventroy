@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope, Sora } from "next/font/google";
 import MotionProvider from "@/components/ui/MotionProvider";
+import DialogHost from "@/components/ui/Dialog";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -29,7 +30,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${manrope.variable} ${sora.variable} antialiased`}>
-        <MotionProvider>{children}</MotionProvider>
+        <MotionProvider>
+          {children}
+          <DialogHost />
+        </MotionProvider>
       </body>
     </html>
   );

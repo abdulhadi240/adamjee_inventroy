@@ -5,11 +5,10 @@ import { createClientBrowser } from "@/lib/supabase/client";
 import PasswordInput from "@/components/ui/PasswordInput";
 import RedirectingSpinner from "@/components/ui/RedirectingSpinner";
 import { Button } from "@/components/ui/Button";
-import { FormAlert, PendingLabel } from "./FormAlert";
+import { notify } from "@/components/ui/Dialog";
+import { PendingLabel } from "./FormAlert";
 
 export default function UpdatePasswordForm() {
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
   const [isRedirecting, setIsRiderecting] = useState(false);
 
@@ -22,7 +21,7 @@ export default function UpdatePasswordForm() {
       window.history.replaceState({}, document.title, "/update-password");
 
       if (!token_hash) {
-        setErrorMessage("Invalid or missing token.");
+        notify("Invalid or missing token.");
         return;
       }
 
@@ -33,7 +32,7 @@ export default function UpdatePasswordForm() {
 
       if (error) {
         console.error("Verify Otp error:", error);
-        setErrorMessage("Your reset link is invalid or expired.");
+        notify("Your reset link is invalid or expired.");
       }
     };
 
@@ -43,8 +42,6 @@ export default function UpdatePasswordForm() {
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsPending(true);
-    setErrorMessage(null);
-    setSuccess(null);
 
     const supabase = createClientBrowser();
     const formData = new FormData(e.target as HTMLFormElement);
@@ -53,9 +50,9 @@ export default function UpdatePasswordForm() {
     const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
-      setErrorMessage(error.message);
+      notify(error.message);
     } else {
-      setSuccess("Password updated successfully!");
+      notify("Password updated.", "success");
       setIsRiderecting(true);
       setTimeout(() => {
         supabase.auth.signOut();
@@ -77,8 +74,6 @@ export default function UpdatePasswordForm() {
         label="New password"
         placeholder="Enter your new password"
       />
-      <FormAlert tone="error" message={errorMessage} />
-      <FormAlert tone="success" message={success} />
       <Button type="submit" disabled={isPending} className="mt-1 w-full">
         <PendingLabel
           pending={isPending}

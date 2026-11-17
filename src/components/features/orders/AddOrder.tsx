@@ -1,5 +1,6 @@
 "use client";
 
+import { notify } from "@/components/ui/Dialog";
 import {
   useState,
   useActionState,
@@ -121,7 +122,7 @@ export default function AddOrder({
         handleDiscard();
         onOrderChange();
       } else {
-        alert(state.message);
+        notify(state.message);
       }
     }
   }, [state, onOrderChange, handleDiscard]);
