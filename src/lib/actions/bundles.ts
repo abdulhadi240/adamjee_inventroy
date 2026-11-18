@@ -69,6 +69,8 @@ export async function getBundles(searchQuery?: string): Promise<Bundle[]> {
   let query = supabase
     .from("bundles")
     .select(BUNDLE_SELECT)
+    // A bundle whose product was deleted after being sold is archived, not gone
+    .is("product.archived_at", null)
     .order("created_at", { ascending: false });
 
   if (searchQuery) {
@@ -128,6 +130,7 @@ export async function getBundleFormOptions(): Promise<BundleFormOptions> {
         .select("id, product_name, amount_stock, buy_price")
         // Skips bundles and catalog entries created for parts sold out of one
         .eq("low_stock_alerts", true)
+        .is("archived_at", null)
         .order("product_name"),
       supabase.from("bundles").select("product_id"),
       supabase.from("customers").select("id, name").order("name"),

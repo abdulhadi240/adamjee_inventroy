@@ -4,7 +4,12 @@ import { notify, confirmDialog } from "@/components/ui/Dialog";
 import { useState, useActionState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { updateProduct, deleteProduct } from "@/lib/actions/products";
+import {
+  updateProduct,
+  deleteProduct,
+  reduceProductStock,
+} from "@/lib/actions/products";
+import Modal from "@/components/ui/Modal";
 import { getAllCategories } from "@/lib/actions/categories";
 import { Category, Product } from "@/lib/types";
 import { Button } from "@/components/ui/Button";
@@ -12,7 +17,15 @@ import InfoRow from "@/components/ui/InfoRow";
 import LabeledInput from "@/components/ui/LabeledInput";
 import LabeledSelect from "@/components/ui/LabeledSelect";
 import ImageDropzone from "@/components/ui/ImageDropzone";
-import { Check, Copy, ExternalLink, Pencil, Trash2, X } from "lucide-react";
+import {
+  Check,
+  Copy,
+  ExternalLink,
+  Minus,
+  Pencil,
+  Trash2,
+  X,
+} from "lucide-react";
 import { AnimatedCard, CardHeader } from "@/components/ui/motion";
 import { hasProductImage } from "@/components/features/inventory/ProductThumb";
 import {
@@ -111,7 +124,34 @@ export default function ProductOverviewTab({
     });
   };
 
-  const handleFileChange = (file: File | null) => {
+  const [isReduceOpen, setIsReduceOpen] = useState(false);
+  const [reduceQty, setReduceQty] = useState("");
+  const [isReducing, startReduceTransition] = useTransition();
+
+  const reduceAmount = Number(reduceQty);
+  const reduceValid =
+    Number.isInteger(reduceAmount) &&
+    reduceAmount > 0 &&
+    reduceAmount <= product.amount_stock;
+
+  const closeReduce = () => {
+    setIsReduceOpen(false);
+    setReduceQty("");
+  };
+
+  const handleReduce = () => {
+    if (!reduceValid) return;
+    startReduceTransition(async () => {
+      const result = await reduceProductStock(product.id, reduceAmount);
+      if (result.success) {
+        closeReduce();
+        router.refresh();
+      }
+      notify(result.message, result.success ? "success" : "error");
+    });
+  };
+
+  const handleFileChange =(file: File | null) => {
     if (file) {
       setNewImageFile(file);
       setNewImagePreviewUrl(URL.createObjectURL(file));
@@ -171,6 +211,18 @@ export default function ProductOverviewTab({
                 onClick={handleEdit}
               >
                 <Pencil className="size-3.5" /> Edit
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsReduceOpen(true)}
+                disabled={product.amount_stock <= 0}
+                title={
+                  product.amount_stock <= 0 ? "Nothing in stock" : undefined
+                }
+              >
+                <Minus className="size-3.5" /> Reduce stock
               </Button>
               <Button
                 type="button"
@@ -316,6 +368,57 @@ export default function ProductOverviewTab({
           </AnimatedCard>
         )}
       </div>
+
+      <Modal
+        isOpen={isReduceOpen}
+        onClose={closeReduce}
+        title="Reduce stock"
+        description={`Take units of ${product.product_name} out of stock without a sale.`}
+        footer={
+          <>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={closeReduce}
+              disabled={isReducing}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleReduce}
+              disabled={!reduceValid || isReducing}
+            >
+              {isReducing ? "Reducing…" : "Reduce stock"}
+            </Button>
+          </>
+        }
+      >
+        <LabeledInput
+          id="reduce_quantity"
+          label="Quantity to remove"
+          type="number"
+          min={1}
+          max={product.amount_stock}
+          step={1}
+          autoFocus
+          value={reduceQty}
+          onChange={(e) => setReduceQty(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleReduce();
+            }
+          }}
+        />
+        <p className="text-xs text-muted">
+          In stock: {product.amount_stock}
+          {reduceValid && ` → ${product.amount_stock - reduceAmount} after`}
+          {reduceQty !== "" &&
+            !reduceValid &&
+            ` · enter a whole number from 1 to ${product.amount_stock}`}
+        </p>
+      </Modal>
     </Container>
   );
 }

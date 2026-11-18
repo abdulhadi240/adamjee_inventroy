@@ -27,7 +27,8 @@ export async function getDashboardStats(period: string = "monthly") {
       .from("products")
       .select(
         "id, product_name, amount_stock, product_category, product_image, sell_price, low_stock_alerts"
-      ),
+      )
+      .is("archived_at", null),
     supabase.from("orders").select("id, total_cost, status, created_at"),
     supabase
       .from("order_items")

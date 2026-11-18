@@ -183,6 +183,62 @@ export async function updateProduct(
   return { success: true, message: "Product updated successfully." };
 }
 
+/** Takes units out of stock without a sale (damaged, lost, miscounted, ...). */
+export async function reduceProductStock(
+  productId: number,
+  quantity: number
+): Promise<FormState> {
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    return { success: false, message: "Enter a whole number above zero." };
+  }
+
+  const supabase = await createClientServer();
+
+  const { data: product, error: fetchError } = await supabase
+    .from("products")
+    .select("amount_stock")
+    .eq("id", productId)
+    .is("archived_at", null)
+    .maybeSingle();
+
+  if (fetchError || !product) {
+    return { success: false, message: "Could not find the product." };
+  }
+
+  if (quantity > product.amount_stock) {
+    return {
+      success: false,
+      message: `Only ${product.amount_stock} in stock.`,
+    };
+  }
+
+  // Only applies if the stock is still what we just read, so a sale made in
+  // between is never overwritten.
+  const { data: updated, error } = await supabase
+    .from("products")
+    .update({ amount_stock: product.amount_stock - quantity })
+    .eq("id", productId)
+    .eq("amount_stock", product.amount_stock)
+    .select("id");
+
+  if (error) {
+    console.error("Reduce Stock Error:", error.message);
+    return { success: false, message: `Could not reduce stock: ${error.message}` };
+  }
+
+  if (!updated?.length) {
+    return {
+      success: false,
+      message: "Stock changed in the meantime. Please try again.",
+    };
+  }
+
+  revalidatePath(`/product/${productId}`);
+  revalidatePath("/inventory");
+  revalidatePath("/dashboard");
+  return { success: true, message: `Stock reduced by ${quantity}.` };
+}
+
 export async function deleteProductImage(imageUrl: string): Promise<boolean> {
   const supabase = await createClientServer();
   const BUCKET_NAME = "images";
@@ -229,6 +285,35 @@ export async function deleteProduct(productId: number): Promise<FormState> {
     .delete()
     .eq("id", productId);
 
+  // Foreign key violation (23503, or 23001 on newer Postgres): the product
+  // appears in orders or sales. Those records must keep pointing at it, so
+  // archive it instead of deleting.
+  if (error?.code === "23503" || error?.code === "23001") {
+    const { error: archiveError } = await supabase
+      .from("products")
+      .update({
+        archived_at: new Date().toISOString(),
+        low_stock_alerts: false,
+      })
+      .eq("id", productId);
+
+    if (archiveError) {
+      console.error("Archive Product Error:", archiveError.message);
+      return {
+        success: false,
+        message: `Delete failed: ${archiveError.message}`,
+      };
+    }
+
+    revalidatePath("/inventory");
+    revalidatePath("/dashboard");
+    return {
+      success: true,
+      message:
+        "Product removed from inventory. Its order and sales history was kept.",
+    };
+  }
+
   if (error) {
     console.error("Delete Product Error:", error.message);
     return { success: false, message: `Delete failed: ${error.message}` };
@@ -239,6 +324,7 @@ export async function deleteProduct(productId: number): Promise<FormState> {
   }
 
   revalidatePath("/inventory");
+  revalidatePath("/dashboard");
   return { success: true, message: "Product deleted." };
 }
 
@@ -246,7 +332,8 @@ export async function getTotalProducts() {
   const supabase = await createClientServer();
   const { error, count } = await supabase
     .from("products")
-    .select("*", { count: "exact", head: true });
+    .select("*", { count: "exact", head: true })
+    .is("archived_at", null);
 
   if (error) {
     console.error("Error fetching total products: ", error.message);
@@ -260,7 +347,8 @@ export async function getTotalCategoryProducts() {
   const supabase = await createClientServer();
   const { data: categories, error } = await supabase
     .from("products")
-    .select("product_category");
+    .select("product_category")
+    .is("archived_at", null);
 
   const uniqueCategories = Array.from(
     new Set(categories?.map((p) => p.product_category))
@@ -286,12 +374,14 @@ export async function getTotalLowStockProducts() {
       .select("*", { count: "exact", head: true })
       .gt("amount_stock", 0)
       .lt("amount_stock", LOW_STOCK_THRESHOLD)
-      .eq("low_stock_alerts", true),
+      .eq("low_stock_alerts", true)
+      .is("archived_at", null),
     supabase
       .from("products")
       .select("*", { count: "exact", head: true })
       .eq("amount_stock", 0)
-      .eq("low_stock_alerts", true),
+      .eq("low_stock_alerts", true)
+      .is("archived_at", null),
   ]);
 
   if (errorLow || errorNo) {
@@ -307,7 +397,8 @@ export async function getTotalInventoryValue() {
   const supabase = await createClientServer();
   const { data, error } = await supabase
     .from("products")
-    .select("buy_price, amount_stock");
+    .select("buy_price, amount_stock")
+    .is("archived_at", null);
 
   if (error) {
     console.error("Error fetching inventory value data: ", error.message);
@@ -346,7 +437,8 @@ export async function getProductById(id: string): Promise<Product | null> {
     `
     )
     .match({ id: numericId })
-    .single();
+    .is("archived_at", null)
+    .maybeSingle();
 
   if (!data) {
     return redirect("/inventory");
@@ -416,6 +508,7 @@ export async function getPaginatedProductsByUser(
   `,
       { count: "exact" }
     )
+    .is("archived_at", null)
     .range(from, to)
     .order("amount_stock");
 
@@ -446,6 +539,7 @@ export async function getAllProductsForSelect() {
     .select(
       "id, product_name, product_type, buy_price, sell_price, amount_stock, supplier_id"
     )
+    .is("archived_at", null)
     .order("product_name");
 
   if (error) {

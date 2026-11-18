@@ -25,6 +25,7 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
     .from("products")
     .select("id, product_name, product_category, product_type")
     .ilike("product_name", `%${query}%`)
+    .is("archived_at", null)
     .limit(limitPerCategory);
 
   const suppliersPromise = supabase

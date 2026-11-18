@@ -43,7 +43,10 @@ export async function getCategoriesWithCounts(
 
   const [categoriesResult, productsResult] = await Promise.all([
     query,
-    supabase.from("products").select("product_category"),
+    supabase
+      .from("products")
+      .select("product_category")
+      .is("archived_at", null),
   ]);
 
   if (categoriesResult.error) throw categoriesResult.error;
@@ -180,7 +183,8 @@ export async function deleteCategory(id: number): Promise<FormState> {
   const { count, error: countError } = await supabase
     .from("products")
     .select("*", { count: "exact", head: true })
-    .eq("product_category", existing.name);
+    .eq("product_category", existing.name)
+    .is("archived_at", null);
 
   if (countError) {
     return { success: false, message: countError.message };

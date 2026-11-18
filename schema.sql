@@ -74,11 +74,16 @@ CREATE TABLE
         user_id uuid REFERENCES public.users (id),
         created_at timestamp
         with
-            time zone DEFAULT now ()
+            time zone DEFAULT now (),
+            -- Set instead of deleting when the product appears in orders or sales.
+            -- Archived products are hidden from inventory but kept for history.
+            archived_at timestamp
+        with
+            time zone
     );
 
 -- --------------------------------------------------------------------------------------
--- 5. ORDER SEQUENCES 
+-- 5. ORDER SEQUENCES
 -- Helper table to generate readable Purchase Order codes (e.g., PO-202310-001).
 -- It tracks the last number used for a specific month/year key.
 CREATE TABLE

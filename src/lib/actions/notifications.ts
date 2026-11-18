@@ -14,6 +14,7 @@ export async function getLowStockNotifications() {
       .lt("amount_stock", LOW_STOCK_THRESHOLD)
       // Bundles (always 1) and parts sold out of a bundle (always 0) opt out
       .eq("low_stock_alerts", true)
+      .is("archived_at", null)
       .order("amount_stock", { ascending: true })
       .limit(20);
 
