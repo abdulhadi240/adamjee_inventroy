@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { formatCurrency, formatDate } from "@/lib/utils/formatters";
 import { Sale } from "@/lib/types";
 import { PaymentBadge } from "./SaleRow";
+import BundleContentsToggle from "@/components/features/bundles/BundleContents";
 
 interface SaleItemsModalProps {
   sale: Sale | null;
@@ -34,14 +35,14 @@ export default function SaleItemsModal({ sale, onClose }: SaleItemsModalProps) {
     >
       {sale && (
         <>
-          <ul className="flex max-h-72 flex-col gap-2 overflow-y-auto">
+          <ul className="flex max-h-[50vh] flex-col gap-2 overflow-y-auto">
             {sale.items.map((item, index) => (
               <motion.li
                 key={index}
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.04 }}
-                className="flex items-center gap-3 rounded-xl border border-line p-3"
+                className="flex shrink-0 items-start gap-3 rounded-xl border border-line p-3"
               >
                 <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-navy-50 text-navy-600">
                   <Package className="size-4" />
@@ -56,6 +57,10 @@ export default function SaleItemsModal({ sale, onClose }: SaleItemsModalProps) {
                       ? ` · ${item.product.product_category}`
                       : ""}
                   </p>
+                  <BundleContentsToggle
+                    productId={item.product?.id}
+                    className="mt-1"
+                  />
                 </div>
                 <span className="text-sm font-semibold tabular-nums text-ink">
                   {formatCurrency(item.price_at_sale * item.quantity)}

@@ -183,6 +183,61 @@ export async function updateProduct(
   return { success: true, message: "Product updated successfully." };
 }
 
+/** Puts units into stock directly, without a purchase order. */
+export async function addProductStock(
+  productId: number,
+  quantity: number
+): Promise<FormState<{ amount_stock: number }>> {
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    return { success: false, message: "Enter a whole number above zero." };
+  }
+
+  const supabase = await createClientServer();
+
+  const { data: product, error: fetchError } = await supabase
+    .from("products")
+    .select("amount_stock")
+    .eq("id", productId)
+    .is("archived_at", null)
+    .maybeSingle();
+
+  if (fetchError || !product) {
+    return { success: false, message: "Could not find the product." };
+  }
+
+  const amount_stock = product.amount_stock + quantity;
+
+  // Only applies if the stock is still what we just read, so a sale made in
+  // between is never overwritten.
+  const { data: updated, error } = await supabase
+    .from("products")
+    .update({ amount_stock })
+    .eq("id", productId)
+    .eq("amount_stock", product.amount_stock)
+    .select("id");
+
+  if (error) {
+    console.error("Add Stock Error:", error.message);
+    return { success: false, message: `Could not add stock: ${error.message}` };
+  }
+
+  if (!updated?.length) {
+    return {
+      success: false,
+      message: "Stock changed in the meantime. Please try again.",
+    };
+  }
+
+  revalidatePath(`/product/${productId}`);
+  revalidatePath("/inventory");
+  revalidatePath("/dashboard");
+  return {
+    success: true,
+    message: `Stock increased by ${quantity}.`,
+    data: { amount_stock },
+  };
+}
+
 /** Takes units out of stock without a sale (damaged, lost, miscounted, ...). */
 export async function reduceProductStock(
   productId: number,

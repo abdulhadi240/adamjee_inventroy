@@ -188,7 +188,7 @@ export async function getPaginatedOrders(
       items:order_items (
         quantity,
         cost_per_item,
-        product:products ( product_name, product_type, product_category )
+        product:products ( id, product_name, product_type, product_category )
       )
     `,
       { count: "exact" }

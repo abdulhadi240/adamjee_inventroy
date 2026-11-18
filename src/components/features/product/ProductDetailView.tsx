@@ -19,6 +19,7 @@ import { StockBadge } from "@/components/features/inventory/ProductRow";
 import { hasProductImage } from "@/components/features/inventory/ProductThumb";
 import { formatCurrency } from "@/lib/utils/formatters";
 import { Product, StockStats } from "@/lib/types";
+import BundleContentsToggle from "@/components/features/bundles/BundleContents";
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -119,6 +120,7 @@ export default function ProductDetailView({
               </span>
             </p>
           )}
+          <BundleContentsToggle productId={product.id} className="mt-3" />
 
           <div className="mt-5 flex flex-wrap items-end gap-x-8 gap-y-3">
             <div>

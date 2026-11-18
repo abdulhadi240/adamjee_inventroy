@@ -87,19 +87,17 @@ export function CustomerFormModal({
         <LabeledInput
           id="customer_contact_number"
           name="contact_number"
-          label="Phone"
+          label="Phone (optional)"
           type="tel"
           inputMode="tel"
           placeholder="e.g., 0300 1234567"
-          required
         />
         <LabeledInput
           id="customer_address"
           name="address"
-          label="Address"
+          label="Address (optional)"
           type="text"
           placeholder="e.g., House 12, Gulberg III, Lahore"
-          required
         />
       </form>
     </Modal>

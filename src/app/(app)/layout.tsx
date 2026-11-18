@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import Sidebar from "@/components/layout/Sidebar";
 import Topbar from "@/components/layout/Topbar";
+import { BundleContentsProvider } from "@/components/features/bundles/BundleContents";
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -28,7 +29,9 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           className="mx-auto w-full max-w-[1500px] flex-1 px-4 py-6 md:px-7"
         >
           {/* Pages read the URL via useSearchParams (tables, filters) */}
-          <Suspense fallback={null}>{children}</Suspense>
+          <Suspense fallback={null}>
+            <BundleContentsProvider>{children}</BundleContentsProvider>
+          </Suspense>
         </motion.main>
       </div>
     </div>

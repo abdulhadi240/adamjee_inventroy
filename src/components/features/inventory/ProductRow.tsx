@@ -6,6 +6,7 @@ import { formatCurrency } from "@/lib/utils/formatters";
 import { LOW_STOCK_THRESHOLD } from "@/lib/constants";
 import { Product } from "@/lib/types";
 import ProductThumb from "@/components/features/inventory/ProductThumb";
+import BundleContentsToggle from "@/components/features/bundles/BundleContents";
 
 export function StockBadge({ stock }: { stock: number }) {
   if (stock === 0)
@@ -61,6 +62,10 @@ export default function ProductRow({ product, index = 0 }: ProductRowProps) {
             </p>
           </div>
         </Link>
+        <BundleContentsToggle
+          productId={product.id}
+          className="mt-1.5 pl-[52px]"
+        />
       </td>
       <td className="hidden lg:table-cell text-muted">{product.product_type}</td>
       <td className="hidden md:table-cell text-muted">

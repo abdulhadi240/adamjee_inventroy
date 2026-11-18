@@ -153,6 +153,17 @@ export type Bundle = {
   components: BundleComponent[];
 };
 
+/** What is inside a bundle, for the "parts" dropdown shown next to its product. */
+export type BundleContents = {
+  bundle_id: number;
+  bundle_type: string;
+  total_cost: number;
+  components: Pick<
+    BundleComponent,
+    "id" | "name" | "model" | "quantity" | "unit_cost" | "removed_quantity"
+  >[];
+};
+
 /** One component line in the "New bundle" form. */
 export type BundleComponentInput = {
   name: string;
@@ -261,6 +272,7 @@ export interface Order {
     quantity: number;
     cost_per_item: number;
     product: {
+      id: number;
       product_name: string;
       product_type: string;
       product_category: string;
@@ -324,7 +336,7 @@ export interface Sale {
   total_amount: number;
   /** The calculated total profit generated from this sale. */
   total_profit: number;
-  /** The method used for payment (e.g., 'Cash', 'Bank Transfer', 'JazzCash'). */
+  /** The method used for payment ('Cash', 'Card' or 'Bank Transfer'). */
   payment_method: string;
   /** The status of the payment (e.g., 'Paid', 'Pending'). */
   payment_status: string;
@@ -337,6 +349,7 @@ export interface Sale {
     quantity: number;
     price_at_sale: number;
     product: {
+      id: number;
       product_name: string;
       product_type: string;
       product_category: string;
@@ -354,8 +367,10 @@ export type SaleItem = {
   product_name: string;
   /** The number of units of the product sold. */
   quantity: number;
-  /** The unit selling price at the time of the sale. */
+  /** The unit price charged in this sale; editable in the cart. */
   sell_price: number;
+  /** The product's regular sell price, to show a discount against. */
+  list_price: number;
 };
 
 /**
@@ -379,6 +394,8 @@ export type SalesStatsData = {
 export type SaleItemState = {
   product_id: string;
   quantity: string;
+  /** Unit price charged; omitted to use the product's sell price. */
+  price?: string;
 };
 
 // -----------------------------------------------------------------------------------------------------------------------------
@@ -393,10 +410,10 @@ export interface Customer {
   id: string;
   /** The full name of the customer. */
   name: string;
-  /** The physical address of the customer. */
-  address: string;
-  /** The primary contact number for the customer. */
-  contact_number: string;
+  /** The physical address of the customer (optional). */
+  address: string | null;
+  /** The primary contact number for the customer (optional). */
+  contact_number: string | null;
 }
 
 /**
@@ -407,8 +424,8 @@ export type CustomerOption = {
   id: string;
   /** The full name of the customer. */
   name: string;
-  /** The primary contact number for the customer. */
-  contact_number: number;
+  /** The primary contact number for the customer (optional). */
+  contact_number: number | null;
 };
 
 // -----------------------------------------------------------------------------------------------------------------------------

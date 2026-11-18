@@ -6,6 +6,23 @@ import { sanitizePhoneNumber } from "@/lib/utils/formatters";
 import { CustomerOption, FormState } from "@/lib/types";
 import { getAuthUser } from "@/lib/supabase/auth";
 
+/**
+ * Parses the optional phone field of the customer forms.
+ * An empty value is valid and stored as null; a non-empty value must
+ * sanitize to a valid number.
+ */
+function parseOptionalContact(
+  raw: FormDataEntryValue | null
+): { valid: true; value: number | null } | { valid: false } {
+  const trimmed = typeof raw === "string" ? raw.trim() : "";
+  if (!trimmed) return { valid: true, value: null };
+
+  const contact_number = parseInt(sanitizePhoneNumber(trimmed), 10);
+  if (isNaN(contact_number)) return { valid: false };
+
+  return { valid: true, value: contact_number };
+}
+
 export async function getAllCustomers() {
   const supabase = await createClientServer();
 
@@ -34,21 +51,19 @@ export async function insertCustomer(
     return { success: false, message: "User not authenticated." };
   }
 
-  const customer_name = formData.get("customer_name") as string;
-  const address = formData.get("address") as string;
-  const contact_number_str = formData.get("contact_number") as string;
-  const sanitized_contact = sanitizePhoneNumber(contact_number_str);
+  const customer_name = ((formData.get("customer_name") as string) || "").trim();
+  const address = ((formData.get("address") as string) || "").trim() || null;
+  const contact = parseOptionalContact(formData.get("contact_number"));
 
-  if (!customer_name || !address || !sanitized_contact) {
-    return {
-      success: false,
-      message: "Customer name, address, and contact are required.",
-    };
+  if (!customer_name) {
+    return { success: false, message: "Customer name is required." };
   }
 
-  const contact_number = parseInt(sanitized_contact, 10);
-  if (isNaN(contact_number)) {
-    return { success: false, message: "Invalid contact number format." };
+  if (!contact.valid) {
+    return {
+      success: false,
+      message: "Invalid phone number. Enter digits only or leave it empty.",
+    };
   }
 
   const { data, error } = await supabase
@@ -56,7 +71,7 @@ export async function insertCustomer(
     .insert({
       name: customer_name,
       address: address,
-      contact_number: contact_number,
+      contact_number: contact.value,
       user_id: user.id,
     })
     .select("id, name, contact_number")
@@ -84,15 +99,23 @@ export async function updateCustomer(
 ): Promise<FormState> {
   const supabase = await createClientServer();
   const id = formData.get("id") as string;
-  const customer_name = formData.get("customer_name") as string;
-  const address = formData.get("address") as string;
-  const contact_raw = formData.get("contact_number") as string;
+  const customer_name = ((formData.get("customer_name") as string) || "").trim();
+  const address = ((formData.get("address") as string) || "").trim() || null;
+  const contact = parseOptionalContact(formData.get("contact_number"));
 
-  const contact_sanitized = sanitizePhoneNumber(contact_raw);
-  const contact_number = parseInt(contact_sanitized, 10);
-
-  if (!id || !customer_name || isNaN(contact_number)) {
+  if (!id) {
     return { success: false, message: "Invalid data." };
+  }
+
+  if (!customer_name) {
+    return { success: false, message: "Customer name is required." };
+  }
+
+  if (!contact.valid) {
+    return {
+      success: false,
+      message: "Invalid phone number. Enter digits only or leave it empty.",
+    };
   }
 
   const { error } = await supabase
@@ -100,7 +123,7 @@ export async function updateCustomer(
     .update({
       name: customer_name,
       address,
-      contact_number,
+      contact_number: contact.value,
     })
     .eq("id", id);
 

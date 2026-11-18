@@ -60,10 +60,8 @@ export const FOOTER_NAV_LINKS: NavLink[] = [
 
 export const PAYMENT_METHODS = [
   { label: "Cash", value: "Cash" },
-  { label: "Bank Transfer", value: "Bank Transfer" },
-  { label: "JazzCash", value: "JazzCash" },
-  { label: "Easypaisa", value: "Easypaisa" },
   { label: "Card", value: "Card" },
+  { label: "Bank Transfer", value: "Bank Transfer" },
 ];
 
 export const PAYMENT_STATUSES = [

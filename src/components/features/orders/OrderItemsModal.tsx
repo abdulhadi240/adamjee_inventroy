@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { formatCurrency } from "@/lib/utils/formatters";
 import { Order } from "@/lib/types";
 import { OrderStatusBadge } from "@/components/features/orders/OrderRow";
+import BundleContentsToggle from "@/components/features/bundles/BundleContents";
 
 interface OrderItemsModalProps {
   order: Order | null;
@@ -45,7 +46,7 @@ export default function OrderItemsModal({
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.04 }}
-            className="flex items-center gap-3 rounded-xl border border-line p-3"
+            className="flex shrink-0 items-start gap-3 rounded-xl border border-line p-3"
           >
             <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-navy-50 text-navy-600">
               <Package className="size-4" />
@@ -59,6 +60,10 @@ export default function OrderItemsModal({
                   .filter(Boolean)
                   .join(" · ")}
               </p>
+              <BundleContentsToggle
+                productId={item.product?.id}
+                className="mt-1"
+              />
             </div>
             <div className="text-right">
               <p className="text-sm font-semibold tabular-nums text-ink">

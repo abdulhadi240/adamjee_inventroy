@@ -4,6 +4,7 @@ import { createClientServer } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import {
   Bundle,
+  BundleContents,
   BundleComponentInput,
   BundleFormOptions,
   FormState,
@@ -85,6 +86,43 @@ export async function getBundles(searchQuery?: string): Promise<Bundle[]> {
   }
 
   return (data as unknown as Bundle[]).map(sortComponents);
+}
+
+/**
+ * Every bundle's parts, keyed by the id of the product that represents it.
+ * Feeds the "parts" dropdown shown wherever a bundle's product appears.
+ */
+export async function getBundleContentsMap(): Promise<
+  Record<number, BundleContents>
+> {
+  const supabase = await createClientServer();
+
+  const { data, error } = await supabase
+    .from("bundles")
+    .select(
+      `
+      id, bundle_type, total_cost, product_id,
+      components:bundle_components (
+        id, name, model, quantity, unit_cost, removed_quantity
+      )
+    `
+    );
+
+  if (error) {
+    console.error("Error fetching bundle contents:", error.message);
+    return {};
+  }
+
+  const map: Record<number, BundleContents> = {};
+  for (const bundle of data) {
+    map[bundle.product_id] = {
+      bundle_id: bundle.id,
+      bundle_type: bundle.bundle_type,
+      total_cost: Number(bundle.total_cost),
+      components: [...bundle.components].sort((a, b) => a.id - b.id),
+    };
+  }
+  return map;
 }
 
 export async function getBundleById(id: number): Promise<Bundle | null> {

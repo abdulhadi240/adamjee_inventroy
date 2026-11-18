@@ -8,6 +8,7 @@ import {
   updateProduct,
   deleteProduct,
   reduceProductStock,
+  addProductStock,
 } from "@/lib/actions/products";
 import Modal from "@/components/ui/Modal";
 import { getAllCategories } from "@/lib/actions/categories";
@@ -23,6 +24,7 @@ import {
   ExternalLink,
   Minus,
   Pencil,
+  Plus,
   Trash2,
   X,
 } from "lucide-react";
@@ -124,27 +126,39 @@ export default function ProductOverviewTab({
     });
   };
 
-  const [isReduceOpen, setIsReduceOpen] = useState(false);
-  const [reduceQty, setReduceQty] = useState("");
-  const [isReducing, startReduceTransition] = useTransition();
+  // Direct stock adjustment: add units, or take them out without a sale
+  const [stockMode, setStockMode] = useState<"add" | "reduce" | null>(null);
+  // Kept while the popup animates closed, so its wording does not flip
+  const [shownStockMode, setShownStockMode] = useState<"add" | "reduce">("add");
+  const [stockQty, setStockQty] = useState("");
+  const [isAdjusting, startAdjustTransition] = useTransition();
 
-  const reduceAmount = Number(reduceQty);
-  const reduceValid =
-    Number.isInteger(reduceAmount) &&
-    reduceAmount > 0 &&
-    reduceAmount <= product.amount_stock;
+  const isAdding = shownStockMode === "add";
+  const stockAmount = Number(stockQty);
+  const stockValid =
+    Number.isInteger(stockAmount) &&
+    stockAmount > 0 &&
+    (isAdding || stockAmount <= product.amount_stock);
+  const stockAfter = isAdding
+    ? product.amount_stock + stockAmount
+    : product.amount_stock - stockAmount;
 
-  const closeReduce = () => {
-    setIsReduceOpen(false);
-    setReduceQty("");
+  const openStock = (mode: "add" | "reduce") => {
+    setShownStockMode(mode);
+    setStockMode(mode);
+    setStockQty("");
   };
 
-  const handleReduce = () => {
-    if (!reduceValid) return;
-    startReduceTransition(async () => {
-      const result = await reduceProductStock(product.id, reduceAmount);
+  const closeStock = () => setStockMode(null);
+
+  const handleAdjustStock = () => {
+    if (!stockValid) return;
+    startAdjustTransition(async () => {
+      const result = isAdding
+        ? await addProductStock(product.id, stockAmount)
+        : await reduceProductStock(product.id, stockAmount);
       if (result.success) {
-        closeReduce();
+        closeStock();
         router.refresh();
       }
       notify(result.message, result.success ? "success" : "error");
@@ -216,7 +230,15 @@ export default function ProductOverviewTab({
                 type="button"
                 variant="secondary"
                 size="sm"
-                onClick={() => setIsReduceOpen(true)}
+                onClick={() => openStock("add")}
+              >
+                <Plus className="size-3.5" /> Add stock
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => openStock("reduce")}
                 disabled={product.amount_stock <= 0}
                 title={
                   product.amount_stock <= 0 ? "Nothing in stock" : undefined
@@ -370,53 +392,59 @@ export default function ProductOverviewTab({
       </div>
 
       <Modal
-        isOpen={isReduceOpen}
-        onClose={closeReduce}
-        title="Reduce stock"
-        description={`Take units of ${product.product_name} out of stock without a sale.`}
+        isOpen={stockMode !== null}
+        onClose={closeStock}
+        title={isAdding ? "Add stock" : "Reduce stock"}
+        description={
+          isAdding
+            ? `Put units of ${product.product_name} into stock without a purchase order.`
+            : `Take units of ${product.product_name} out of stock without a sale.`
+        }
         footer={
           <>
             <Button
               type="button"
               variant="secondary"
-              onClick={closeReduce}
-              disabled={isReducing}
+              onClick={closeStock}
+              disabled={isAdjusting}
             >
               Cancel
             </Button>
             <Button
               type="button"
-              onClick={handleReduce}
-              disabled={!reduceValid || isReducing}
+              onClick={handleAdjustStock}
+              disabled={!stockValid || isAdjusting}
             >
-              {isReducing ? "Reducing…" : "Reduce stock"}
+              {isAdjusting ? "Saving…" : isAdding ? "Add stock" : "Reduce stock"}
             </Button>
           </>
         }
       >
         <LabeledInput
-          id="reduce_quantity"
-          label="Quantity to remove"
+          id="stock_quantity"
+          label={isAdding ? "Quantity to add" : "Quantity to remove"}
           type="number"
           min={1}
-          max={product.amount_stock}
+          max={isAdding ? undefined : product.amount_stock}
           step={1}
           autoFocus
-          value={reduceQty}
-          onChange={(e) => setReduceQty(e.target.value)}
+          value={stockQty}
+          onChange={(e) => setStockQty(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              handleReduce();
+              handleAdjustStock();
             }
           }}
         />
         <p className="text-xs text-muted">
           In stock: {product.amount_stock}
-          {reduceValid && ` → ${product.amount_stock - reduceAmount} after`}
-          {reduceQty !== "" &&
-            !reduceValid &&
-            ` · enter a whole number from 1 to ${product.amount_stock}`}
+          {stockValid && ` → ${stockAfter} after`}
+          {stockQty !== "" &&
+            !stockValid &&
+            (isAdding
+              ? " · enter a whole number above zero"
+              : ` · enter a whole number from 1 to ${product.amount_stock}`)}
         </p>
       </Modal>
     </Container>

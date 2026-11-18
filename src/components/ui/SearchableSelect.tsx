@@ -125,6 +125,10 @@ export default function SearchableSelect({
             if (disabled) return;
             setIsOpen(true);
           }}
+          onKeyDown={(e) => {
+            // Enter while searching must not submit the surrounding form
+            if (e.key === "Enter") e.preventDefault();
+          }}
           disabled={disabled}
           className="field pr-9"
           autoComplete="off"

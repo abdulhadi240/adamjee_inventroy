@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { AnimatedCard, CardHeader, EmptyState } from "@/components/ui/motion";
 import { formatCurrency } from "@/lib/utils/formatters";
 import { TopProduct } from "@/lib/types";
+import BundleContentsToggle from "@/components/features/bundles/BundleContents";
 
 function SalesBar({ value, max }: { value: number; max: number }) {
   const pct = max > 0 ? Math.max((value / max) * 100, 4) : 0;
@@ -63,6 +64,7 @@ function ProductTable({ products }: { products: TopProduct[] }) {
               <Link href={`/product/${product.id}`} className="link">
                 {product.name}
               </Link>
+              <BundleContentsToggle productId={product.id} className="mt-1" />
             </td>
             <td>
               <SalesBar value={product.soldQuantity} max={max} />

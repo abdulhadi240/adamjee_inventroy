@@ -32,7 +32,7 @@ export default function CustomerRow({
 
   const [editData, setEditData] = useState({
     name: customer.name,
-    address: customer.address,
+    address: customer.address ?? "",
     contact_number: formatToLocalPhone(customer.contact_number),
   });
 
@@ -140,6 +140,8 @@ export default function CustomerRow({
             className="field h-8 py-1 text-xs"
             disabled={isPending}
           />
+        ) : !customer.contact_number ? (
+          <span className="text-muted">—</span>
         ) : (
           <button
             type="button"

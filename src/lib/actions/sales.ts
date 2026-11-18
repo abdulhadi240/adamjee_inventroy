@@ -21,14 +21,29 @@ export async function insertSale(
   const notes = formData.get("notes") as string;
   const itemsJSON = formData.get("items") as string;
 
-  let items: { product_id: number; quantity: number }[];
+  let items: { product_id: number; quantity: number; price?: number }[];
   try {
-    items = JSON.parse(itemsJSON).map((item: SaleItemState) => ({
-      product_id: parseInt(item.product_id, 10),
-      quantity: parseInt(item.quantity, 10),
-    }));
+    items = JSON.parse(itemsJSON).map((item: SaleItemState) => {
+      // The price charged, when it was changed in the cart (e.g. a discount).
+      // Left out, the sale uses the product's sell price.
+      const price =
+        item.price === undefined || item.price === ""
+          ? undefined
+          : Number(item.price);
+      return {
+        product_id: parseInt(item.product_id, 10),
+        quantity: parseInt(item.quantity, 10),
+        ...(price !== undefined && { price }),
+      };
+    });
     if (items.length === 0)
       return { success: false, message: "Cart is empty." };
+    if (
+      items.some(
+        (i) => i.price !== undefined && (!Number.isFinite(i.price) || i.price < 0)
+      )
+    )
+      return { success: false, message: "Enter a valid price for every item." };
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (err) {
     return { success: false, message: "Invalid items data." };
@@ -137,7 +152,7 @@ export async function getPaginatedSales(
       customer:customers ( name ),
       items:sales_items (
         quantity, price_at_sale,
-        product:products ( product_name, product_type, product_category )
+        product:products ( id, product_name, product_type, product_category )
       )
     `,
       { count: "exact" }

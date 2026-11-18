@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import BundleContentsToggle, {
+  useRefreshBundleContents,
+} from "@/components/features/bundles/BundleContents";
 import Link from "next/link";
 import { PackageOpen, Plus, Unplug, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -55,6 +58,12 @@ export default function BundleList({
   search,
 }: BundleListProps) {
   const [showForm, setShowForm] = useState(false);
+
+  // A bundle added or changed here has no navigation to reload its parts
+  const refreshContents = useRefreshBundleContents();
+  useEffect(() => {
+    refreshContents();
+  }, [bundles, refreshContents]);
 
   const inStock = bundles.filter((b) => !isBundleSold(b));
   const worth = inStock.reduce((sum, b) => sum + getCurrentWorth(b), 0);
@@ -145,6 +154,11 @@ export default function BundleList({
                           </p>
                         </div>
                       </Link>
+                      <BundleContentsToggle
+                        productId={bundle.product.id}
+                        className="mt-1.5 pl-12"
+                        hideLink
+                      />
                     </td>
                     <td className="hidden text-muted md:table-cell">
                       {parts === 0

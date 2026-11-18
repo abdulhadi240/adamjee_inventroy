@@ -24,6 +24,7 @@ import {
   formatCurrency,
   formatDisplayPhoneNumber,
 } from "@/lib/utils/formatters";
+import BundleContentsToggle from "@/components/features/bundles/BundleContents";
 import {
   FormState,
   SupplierOption,
@@ -384,6 +385,11 @@ export default function AddOrder({
                         <p className="text-xs tabular-nums text-muted">
                           {item.quantity} × {formatCurrency(item.cost_per_item)}
                         </p>
+                        <BundleContentsToggle
+                          productId={item.product_id}
+                          className="mt-1"
+                          hideLink
+                        />
                       </div>
                       <p className="text-sm font-semibold tabular-nums text-ink">
                         {formatCurrency(item.quantity * item.cost_per_item)}
